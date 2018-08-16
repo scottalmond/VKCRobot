@@ -16,6 +16,8 @@
 Purpose: 
 Streams readings from magnetometer to terminal
 
+MPU-9250A magn is address 0x68
+
 Usage:
 print all i/o from rpi
 gpio readall
@@ -37,10 +39,15 @@ SCL yellow to: BCM 3, wPi 9, Pys 5
 
 """
 
+import wiringpi as wpi
 
 if __name__ == "__main__":
 	print("START")
-	
+	#wpi.wiringPiSetup()
+	device=wpi.wiringPiI2CSetup(0x68)
+	#wpi.wiringPiI2CWrite(device,0x75)
+	print("Read: ",bin(wpi.wiringPiI2CReadReg8(device,0x75)))
+	print("Read: ",hex(wpi.wiringPiI2CReadReg8(device,0x75)))
 	
 	
 	print("DONE")
