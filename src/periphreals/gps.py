@@ -26,8 +26,8 @@ python3 gps.py
 Parallax 565K GPS:
 VCC to 5V
 GND
-SIO to TODO
-/RAW to TODO
+SIO to TBCM 15, wPi 16, RXD, Physical 10
+/RAW to GND
 
 """
 
