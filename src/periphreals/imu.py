@@ -40,8 +40,8 @@ SCL yellow to: BCM 3, wPi 9, Pys 5
 class IMU:
 
 	#class constants
-	IMU_ADDRESS_I2C=0x68
-	IMU_REGISTER_WHO_AM_I=0x75
+	ADDRESS_I2C=0x68
+	REGISTER_WHO_AM_I=0x75
 
 	def __init__(self):
 		import wiringpi as wpi
@@ -53,13 +53,13 @@ class IMU:
 	#returns None if device fails to initialize
 	def initInterface(self):
 		wpi=self.wpi
-		file_descriptor=wpi.wiringPiI2CSetup(self.IMU_ADDRESS_I2C)
+		file_descriptor=wpi.wiringPiI2CSetup(self.ADDRESS_I2C)
 		#TODO, configure magnetomter...
 		return file_descriptor
 
-	#queries WHO AM I register
+	#queries WHO AM I register, a static value that is the same for every IMU of this model
 	def whoAmI(self):
-		return self.wpi.wiringPiI2CReadReg8(self.file_descriptor,self.IMU_REGISTER_WHO_AM_I)
+		return self.wpi.wiringPiI2CReadReg8(self.file_descriptor,self.REGISTER_WHO_AM_I)
 
 	#queries the MPU-9250A I2C device for magnetic field measurements
 	#combines the measurements from the horizontal plane into a
@@ -75,7 +75,7 @@ class IMU:
 		print("IMU Build Test...")
 		imu=IMU()
 		print("File Descriptor Opened: ","PASS" if imu.file_descriptor>=0 else "FAIL")
-		print("Who am I Test: ","PASS" if 0x71==imu.whoAmI() else "FAIL")
+		print("Who am I Test: ",hex(imu.whoAmI()),", PASS" if 0x71==imu.whoAmI() else ", FAIL")
 		print("Magnetic Heading: ",imu.getHeading())
 
 if __name__ == "__main__":

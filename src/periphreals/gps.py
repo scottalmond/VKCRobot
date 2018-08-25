@@ -60,7 +60,8 @@ class GPS:
 	#latitude is between TODO
 	#longitude is between TODO
 	#return None on Error
-	def parsePositionFix(self,line):
+	@staticmethod
+	def parsePositionFix(line):
 		latitude=-91
 		longitude=-181
 		if(len(line.strip())<=0): return None,None
@@ -80,18 +81,19 @@ class GPS:
 		#correctness check: https://www.latlong.net/Show-Latitude-Longitude.html
 		return latitude,longitude
 		
+	#return True on successful build test
 	@staticmethod
-	def build_test():
-		is_loopback=True
+	def build_test(is_loopback):
 		print("GPS Build Test...")
+		static_gps_sentence="$GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68"
+		print("Static GPS Fix Sentence: ",static_gps_sentence)
+		latitude,longitude=GPS.parsePositionFix(static_gps_sentence)
+		latitude_pass=abs(latitude-49.2741)<=0.0001
+		longitude_pass=abs(longitude-(-123.1853))<=0.0001
+		print("Instantiate GPS class...")
 		gps=GPS()
 		is_file_descriptor_open=not gps.file_descriptor is None
 		print("UART File Descriptor Opened: ","PASS" if is_file_descriptor_open else "FAIL")
-		static_gps_sentence="$GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68"
-		print("Static GPS Fix Sentence: ",static_gps_sentence)
-		latitude,longitude=gps.parsePositionFix(static_gps_sentence)
-		latitude_pass=abs(latitude-49.2741)<=0.0001
-		longitude_pass=abs(longitude-(-123.1853))<=0.0001
 		print("Visualization: https://www.latlong.net/c/?lat="+str(latitude)+"&long="+str(longitude)) #Vancouver
 		print("Parse static position fix: ","PASS" if (latitude_pass and longitude_pass) else "FAIL")
 		if(is_file_descriptor_open):
@@ -119,5 +121,6 @@ class GPS:
 		
 if __name__ == "__main__":
 	print("START")
-	GPS.build_test()
+	is_loopback=False #is UART configured with TX connected to RX?
+	GPS.build_test(is_loopback)
 	print("DONE")
