@@ -1,5 +1,8 @@
 # VKCRobot
 
+use knock-off USB drivers for LittleBig Arm Windows USB communciation with Arduino IDE
+<link>
+
 sudo apt-get update && sudo apt-get upgrade
 
 delete JUST the text "console=serial0,115200" from "/boot/cmdline.txt".  Leave other text intact.  Do not comment lines, file must contain only one line when finished
@@ -28,6 +31,7 @@ hot-swapping network connections: https://unix.stackexchange.com/questions/31603
 add the text below the dashes to the existing 'interface' file
 With XXX as an int between 0 and 255, YYY and a string:
 Use one value for XXX on one rpi, use a different value on another rpi
+ex. 192.168.1.1 on target and 192.168.1.2 in source
 sudo nano /etc/network/interfaces
 
 ------------
@@ -61,5 +65,11 @@ swap to internet:
 sudo ifdown wlan0
 sudo ifup eth0
 
-Ctrl + X, Y
-sudo restart now
+----------
+
+sudo apt-get install zbar-tools
+sudo apt-get install python-zbar
+sudo apt-get install libzbar0
+sudo pip3 install zbar
+#zbar not support under python3, need to use alternative...
+pip3 install pyzbar

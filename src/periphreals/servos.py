@@ -19,7 +19,7 @@ send commands to and reads response from LittleArm Big
 Usage:
 
 run main program:
-python3 arm.py
+python3 servos.py
 
 
 
@@ -27,3 +27,5 @@ Connections:
 USB port connection: /dev/ttyUSB0
 
 """
+
+

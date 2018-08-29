@@ -111,6 +111,6 @@ class Lidar:
 		
 if __name__ == "__main__":
 	print("START")
-	is_stream=True
-	Lidar.build_test(is_stream)
+	is_loop=True
+	Lidar.build_test(is_loop)
 	print("DONE")
