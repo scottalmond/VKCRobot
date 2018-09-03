@@ -35,7 +35,19 @@ GND to GND
 
 class Wheels:
 
-	WHEEL_PINS={"front_right":[0,1]} #forward,reverse pins, 1 is ON/enabled, 0/False is stop
+	FRONT_LEFT="front-left"
+	FRONT_RIGHT="front-right"
+	REAR_LEFT="rear-left"
+	REAR_RIGHT="rear-right"
+	#note: must not use I2C pins to avoid conflicts with other devices:
+	#https://raspberrypi.stackexchange.com/questions/53326/problem-using-i2c-with-ioctl-and-gpios-with-wiringpi-simultaneously/53330#53330
+	#setting wiringpi i2c pins as GPIOs will lock up the interface and require a reboot to clear
+	WHEEL_PINS={FRONT_LEFT:[11,12], #physcial pin numbers
+				#FRONT_RIGHT:[2,3],
+				#REAR_LEFT:[4,5],
+				#REAR_RIGHT:[6,7],
+				}
+	#[forward,reverse] physical pins: 1 is ON/enabled, 0/False is stop
 
 	def __init__(self):
 		import wiringpi as wpi
@@ -43,7 +55,7 @@ class Wheels:
 		self.initInterface()
 
 	def initInterface(self):
-		self.wpi.wiringPiSetup()
+		self.wpi.wiringPiSetupPhys()
 		for wheel_name,wheel_pins in self.WHEEL_PINS.items():
 			for pin in wheel_pins:
 				self.wpi.pinMode(pin,self.wpi.OUTPUT)
@@ -53,28 +65,33 @@ class Wheels:
 	def setState(self,wheel_name,speed):
 		#TODO check if wheel name value
 		#TODO check if speed value, units, PWM...
-		print("SET ",self.WHEEL_PINS[wheel_name][0]," to ",1 if speed>0 else 0)
-		print("SET ",self.WHEEL_PINS[wheel_name][1]," to ",1 if speed<0 else 0)
+		#print("SET ",self.WHEEL_PINS[wheel_name][0]," to ",1 if speed>0 else 0)
+		#print("SET ",self.WHEEL_PINS[wheel_name][1]," to ",1 if speed<0 else 0)
 		self.wpi.digitalWrite(self.WHEEL_PINS[wheel_name][0],1 if speed>0 else 0)
 		self.wpi.digitalWrite(self.WHEEL_PINS[wheel_name][1],1 if speed<0 else 0)
 
 	@staticmethod
-	def build_test(is_loop):
+	def build_test(loop_count):
 		print("Wheels Build Test...")
 		import time
 		print("Init Wheels...")
 		wheels=Wheels()
-		speed_list=[-1,0,1,0]
-		while(is_loop):
-			for speed in speed_list:
-				wheel_name="front_right"
-				print("Set ",wheel_name," to speed: ",speed)
-				wheels.setState("front_right",speed)
-				time.sleep(2)
+		speed_list=[-1,0,1]#,0]
+		while(not loop_count==0):
+			for wheel_name in [Wheels.FRONT_LEFT#,
+							   #Wheels.FRONT_RIGHT,
+							   #Wheels.REAR_LEFT,
+							   #Wheels.REAR_RIGHT
+							   ]:
+				for speed in speed_list:
+					print("Set ",wheel_name," to speed: ",speed)
+					wheels.setState(wheel_name,speed)
+					time.sleep(2)
+			loop_count-=1
 		
 		
 if __name__ == "__main__":
 	print("START")
-	is_loop=True
-	Wheels.build_test(is_loop)
+	loop_count=1
+	Wheels.build_test(loop_count)
 	print("DONE")
