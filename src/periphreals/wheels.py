@@ -42,12 +42,12 @@ class Wheels:
 	#note: must not use I2C pins to avoid conflicts with other devices:
 	#https://raspberrypi.stackexchange.com/questions/53326/problem-using-i2c-with-ioctl-and-gpios-with-wiringpi-simultaneously/53330#53330
 	#setting wiringpi i2c pins as GPIOs will lock up the interface and require a reboot to clear
+	#[forward,reverse] physical pins: 1 is ON/True, 0/False is stop
 	WHEEL_PINS={FRONT_LEFT:[11,12], #physcial pin numbers
 				#FRONT_RIGHT:[2,3],
 				#REAR_LEFT:[4,5],
 				#REAR_RIGHT:[6,7],
 				}
-	#[forward,reverse] physical pins: 1 is ON/enabled, 0/False is stop
 
 	def __init__(self):
 		import wiringpi as wpi
@@ -61,7 +61,7 @@ class Wheels:
 				self.wpi.pinMode(pin,self.wpi.OUTPUT)
 
 	#speed >0 is forward, speed <0 is negative, 0 is stop
-	# speed units...
+	# speed units are 0 (stop) to 1.0 (full speed)
 	def setState(self,wheel_name,speed):
 		#TODO check if wheel name value
 		#TODO check if speed value, units, PWM...
