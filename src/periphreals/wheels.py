@@ -76,7 +76,7 @@ class Wheels:
 		import time
 		print("Init Wheels...")
 		wheels=Wheels()
-		speed_list=[-1,0,1]#,0]
+		speed_list=[-1,0,1,0,1]
 		while(not loop_count==0):
 			for wheel_name in [Wheels.FRONT_LEFT#,
 							   #Wheels.FRONT_RIGHT,
