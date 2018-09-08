@@ -73,3 +73,9 @@ sudo apt-get install libzbar0
 sudo pip3 install zbar
 #zbar not support under python3, need to use alternative...
 pip3 install pyzbar
+
+----
+
+sudo pip3 install wiringpi
+also, enable i2c, camera, etc from start > pref > conf > Interfaces
+ref EscapeRoom
