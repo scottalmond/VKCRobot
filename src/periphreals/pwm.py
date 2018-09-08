@@ -33,7 +33,7 @@ red is VCC
 orange is signal
 DMM on channel 2
 channel 3 to ENABLE pin on H-bridge
-other h-bridge connections are per wheels.py
+other h-bridge connections are per discrete.py
 
 
 """
@@ -120,6 +120,12 @@ class PWM:
 			self.set_pwm(channel,4096,0)
 		else:
 			self.set_pwm(channel,0,int(4096*ratio))#int varies between (0,4096)
+		
+	#enable sleep bit	
+	def dispose(self):
+		oldmode=self.wpi.wiringPiI2CReadReg8(self.file_descriptor,self.I2C_REGISTER_MODE1)
+		newmode_3=oldmode | 0x10
+		self.wpi.wiringPiI2CWriteReg8(self.file_descriptor,self.I2C_REGISTER_MODE1, newmode_3)
 	
 	#note channels will retain last state upon program exit
 	@staticmethod
@@ -130,8 +136,8 @@ class PWM:
 		print("PWM file_descriptor: ",pwm.file_descriptor)
 		print("Run movement/dimming test...")
 		import time
-		servo_list=[0,1]
-		dimmer_list=[2,3]
+		servo_list=[6,7]
+		dimmer_list=[8,9,10,11]
 		while(not loop_count==0):
 			for servo_channel in servo_list:
 				for angle_degrees in [80,100,90]:
@@ -144,6 +150,7 @@ class PWM:
 					pwm.set_dimmer(dimmer_channel,dim_level)
 					time.sleep(2)
 			loop_count-=1
+		pwm.dispose()
 
 if __name__ == "__main__":
 	print("START")
