@@ -19,7 +19,7 @@ send commands to and reads response from LittleArm Big
 Usage:
 
 run main program:
-python3 wheels.py
+python3 discrete.py
 
 gpio readall
 
@@ -33,20 +33,20 @@ GND to GND
 
 """
 
-class Wheels:
+class Discrete:
 
 	FRONT_LEFT="front-left"
-	FRONT_RIGHT="front-right"
 	REAR_LEFT="rear-left"
+	FRONT_RIGHT="front-right"
 	REAR_RIGHT="rear-right"
 	#note: must not use I2C pins to avoid conflicts with other devices:
 	#https://raspberrypi.stackexchange.com/questions/53326/problem-using-i2c-with-ioctl-and-gpios-with-wiringpi-simultaneously/53330#53330
 	#setting wiringpi i2c pins as GPIOs will lock up the interface and require a reboot to clear
 	#[forward,reverse] physical pins: 1 is ON/True, 0/False is stop
-	WHEEL_PINS={FRONT_LEFT:[11,12], #physcial pin numbers
-				#FRONT_RIGHT:[2,3],
-				#REAR_LEFT:[4,5],
-				#REAR_RIGHT:[6,7],
+	WHEEL_PINS={FRONT_LEFT:[7,11], #physcial pin numbers
+				REAR_LEFT:[13,15],
+				FRONT_RIGHT:[12,16],
+				REAR_RIGHT:[18,22],
 				}
 
 	def __init__(self):
@@ -70,22 +70,25 @@ class Wheels:
 		self.wpi.digitalWrite(self.WHEEL_PINS[wheel_name][0],1 if speed>0 else 0)
 		self.wpi.digitalWrite(self.WHEEL_PINS[wheel_name][1],1 if speed<0 else 0)
 
+	def dispose(self):
+		pass
+
 	@staticmethod
 	def build_test(loop_count):
-		print("Wheels Build Test...")
+		print("Discrete Build Test...")
 		import time
-		print("Init Wheels...")
-		wheels=Wheels()
-		speed_list=[-1,0,1,0,1]
+		print("Init Discrete...")
+		discrete=Discrete()
+		speed_list=[-1.0,0,1.0,0,1.0]
 		while(not loop_count==0):
-			for wheel_name in [Wheels.FRONT_LEFT#,
-							   #Wheels.FRONT_RIGHT,
-							   #Wheels.REAR_LEFT,
-							   #Wheels.REAR_RIGHT
+			for wheel_name in [Discrete.FRONT_LEFT,
+							   Discrete.REAR_LEFT,
+							   Discrete.FRONT_RIGHT,
+							   Discrete.REAR_RIGHT
 							   ]:
 				for speed in speed_list:
 					print("Set ",wheel_name," to speed: ",speed)
-					wheels.setState(wheel_name,speed)
+					discrete.setState(wheel_name,speed)
 					time.sleep(2)
 			loop_count-=1
 		
@@ -93,5 +96,5 @@ class Wheels:
 if __name__ == "__main__":
 	print("START")
 	loop_count=1
-	Wheels.build_test(loop_count)
+	Discrete.build_test(loop_count)
 	print("DONE")
