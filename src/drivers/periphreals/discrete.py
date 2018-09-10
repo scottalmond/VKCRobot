@@ -79,7 +79,7 @@ class Discrete:
 		import time
 		print("Init Discrete...")
 		discrete=Discrete()
-		speed_list=[-1.0,0,1.0,0,1.0]
+		speed_list=[-1.0,0,1.0,0]
 		while(not loop_count==0):
 			for wheel_name in [Discrete.FRONT_LEFT,
 							   Discrete.REAR_LEFT,

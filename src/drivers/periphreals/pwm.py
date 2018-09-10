@@ -136,7 +136,7 @@ class PWM:
 		print("PWM file_descriptor: ",pwm.file_descriptor)
 		print("Run movement/dimming test...")
 		import time
-		servo_list=[6,7]
+		servo_list=[0,1,2,3,4,5,6,7]
 		dimmer_list=[8,9,10,11]
 		while(not loop_count==0):
 			for servo_channel in servo_list:
