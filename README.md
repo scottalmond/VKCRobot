@@ -79,3 +79,8 @@ pip3 install pyzbar
 sudo pip3 install wiringpi
 also, enable i2c, camera, etc from start > pref > conf > Interfaces
 ref EscapeRoom
+
+---
+
+edited rc.local to add line:
+python3 /home/pi/Documents/VKCRobot/src/build_test.py &
