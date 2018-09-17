@@ -2,3 +2,6 @@ layout
 https://imgur.com/BrO67tb
 https://imgur.com/a/k2U3SGy
 https://i.imgur.com/bTYnh5s.png
+
+set DC/DC to 5.5V with no load
+with 2 ohm load (2.75A, 15.1W), voltage is 5.3V (1.5 A at 12V power supply, 18W), 83% efficient per back of envelope calculations
