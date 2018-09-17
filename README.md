@@ -82,5 +82,5 @@ ref EscapeRoom
 
 ---
 
-edited rc.local to add line:
+edited /etc/rc.local to add line:
 python3 /home/pi/Documents/VKCRobot/src/build_test.py &
