@@ -77,16 +77,32 @@ class Connection:
 	def getOwnAddress():
 		return ConnectionCore.getOwnAddress()
 
+	#is_loopback performs IP packet ping between server and client on the same machine
+	#is_wlan performs IP packet ping between server and client on different machines
+	# this code must be run identically on two machines (machines will self-identify as robot
+	# or controller based on their own IP addresses
 	@staticmethod
-	def build_test(is_loopback,is_robot):
+	def build_test(is_robot,is_loopback,is_wlan):
 		print("Connection Build Test...")
 		import time
 		
+		print("Check own IP Address...")
+		my_ip_address=Connection.getOwnAddress()
+		found_node=None
+		for node in SERVER_DEFINITION:
+			node_ip_address=node.value["ip_address"]
+			if(my_ip_address==node_ip_address): found_node=node
+		print("Is the IP Address of this device valid? ","FAIL" if found_node is None else "PASS",": ",my_ip_address,", ",found_node)
+		if(found_node is None):
+			print("!! run the following command: sudo ifdown wlan0 && sudo ifdown eth0 && sudo ifup wlan0")
+		if(is_robot is None):
+			is_robot=found_node==SERVER_DEFINITION.ROBOT
+			
 		print("JSON Check...")
 		
 		print("Decode garbage...")
 		decoder = json.JSONDecoder()
-		garbage_list=["FA\nIL","[{\"alpha\": 1}, {\"b"]
+		garbage_list=["HA\nPPY","[{\"alpha\": 1}, {\"b"]
 		for garbage in garbage_list:
 			try:
 				decompressed,end_index=decoder.raw_decode(garbage)
@@ -110,7 +126,6 @@ class Connection:
 		decompressed,end_index=decoder.raw_decode(compressed)
 		print("Decompressed 2: ",decompressed,", ",end_index)
 		
-		
 		if(is_robot):
 			server_def=SERVER_DEFINITION.ROBOT.value #if is robot, setup server as robot
 			client_def=SERVER_DEFINITION.CONTROLLER.value #try to connect to controller as client
@@ -119,13 +134,9 @@ class Connection:
 			client_def=SERVER_DEFINITION.ROBOT.value #try to connect to robot server as client
 		if(is_loopback):# test only locally on one computer
 			print("Run loopback test on local machine...")
-			my_address=Connection.getOwnAddress()
-			print("My IP Address: "+my_address)
-			print("If not a valid IP address, run: ")
-			print("  sudo ifdown wlan0 && sudo ifdown eth0 && sudo ifup wlan0")
 			
-			server_conn=Connection(True,server_def["ip_address"],server_def["port"])
-			client_conn=Connection(False,server_def["ip_address"],server_def["port"])
+			server_conn=Connection(True,server_def["ip_address"],server_def["port"]) #this is server
+			client_conn=Connection(False,server_def["ip_address"],server_def["port"]) #this is client
 			print("Create server...")
 			server_conn.connect()
 			print("Create client...")
@@ -140,7 +151,7 @@ class Connection:
 			print("Client view of server address: ",client_conn.core.socket)
 			
 			print("Wait for link to settle...")
-			time.sleep(2.5)
+			time.sleep(0.5)
 			
 			print("Send message from client to server...")
 			client_to_server_message={"payload":"ALPHA"}
@@ -165,13 +176,57 @@ class Connection:
 			print("Response server to client: ","PASS" if client_to_server_response==server_to_client_message else "FAIL")
 			
 			print("Send multiple messages from client to server...")
-			for rep in range(10):
-				server_to_client_message="PASS_"+str(rep)
+			num_messages=10
+			for rep in range(num_messages):
+				client_to_server_message={"payload":"PASS_"+str(rep)+"_of_"+str(num_messages)}
+				client_conn.send(client_to_server_message)
+			time.sleep(0.2)
+			while(not server_conn.is_inbound_queue_empty()):
+				print("Server received message: ",server_conn.pop())
 			
 			print("Dispose client...")
 			client_conn.disconnect()
 			print("Dispose server...")
 			server_conn.disconnect()
+			
+		if(is_wlan):
+			#robot is server, controller is client
+			server_def=SERVER_DEFINITION.ROBOT.value #if is robot, setup server as robot
+			if(is_robot):
+				this_conn=Connection(True,server_def["ip_address"],server_def["port"])
+			else:
+				this_conn=Connection(False,server_def["ip_address"],server_def["port"])
+			print("Pause to form connection...")
+			this_conn.connect() #NOT blocking, exectuion will continue past here even if link is not established
+			while(not this_conn.is_connected()):
+				time.sleep(0.1) #wait for opposite end of connection to appear
+			print("Connection established: ","PASS" if this_conn.is_connected() else "FAIL")
+			packet_tennis=60 #send packets back and forth X times
+			
+			for packet_iter in range(packet_tennis):
+				if(is_robot):
+					this_packet="robot_"+str(packet_iter)
+					print("Robot sending packet... ",this_packet)
+					this_conn.send(this_packet)
+				if(not is_robot):
+					print("Controller wait for packet...")
+					while(this_conn.is_inbound_queue_empty()):
+						time.sleep(0.01)
+					print("Controller received packet: ",this_conn.pop())
+					this_packet="controller_"+str(packet_iter)
+					print("Controller sending packet... ",this_packet)
+					this_conn.send(this_packet)
+				if(is_robot):
+					print("Robot wait for packet...")
+					while(this_conn.is_inbound_queue_empty()):
+						time.sleep(0.01)
+					print("Robot received packet: ",this_conn.pop())
+					
+			print("Dispose connection...")
+			this_conn.disconnect()
+					
+					
+			
 			
 		#print("Create...")
 		#server_conn=Connection(server_def,True)
@@ -182,8 +237,9 @@ class Connection:
 
 if __name__ == "__main__":
 	print("START")
-	is_loopback=True #test communication on local port?
-	is_robot=True #test communication between multiple computers as is_robot
-	Connection.build_test(is_loopback,is_robot)
+	is_robot=None #None: is_robot determined by IP address of computer
+	is_loopback=False #test communication on local port?
+	is_wlan=True #test communication between computers
+	Connection.build_test(is_robot,is_loopback,is_wlan)
 	print("DONE")
 

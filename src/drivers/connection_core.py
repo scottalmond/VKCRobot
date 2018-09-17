@@ -36,7 +36,7 @@ class ConnectionCore(threading.Thread):
 	MAX_PACKET_SIZE_BYTES=54321 #presumed maximum size of a packet from an external PC
 	CONNECTION_TIMEOUT_SECONDS=0.1 #how long to listen for new connections before doing something else
 	RATE_LIMIT_SECONDS=0.1 #limit how often activity is queried over TCP connection
-	MAX_CONNECTIONS=10 #max clients that can connect to this server
+	MAX_CONNECTIONS=3 #max clients that can connect to this server
 	
 	def __init__(self,is_server,ip_address,port_number):
 		threading.Thread.__init__(self)
@@ -61,16 +61,16 @@ class ConnectionCore(threading.Thread):
 			previous_packet=""
 			data=""
 			try:
-				print("is_server: ",self.is_server)
+				#print("is_server: ",self.is_server)
 				target=self.connection if self.is_server else self.socket
 				data=target.recv(self.MAX_PACKET_SIZE_BYTES)
-				print("data: ",data)
+				#print("data: ",data)
 				#self.inbound_queue.put(package)
 				this_packet=previous_packet+data.decode()
-				print("this_packet A: ",this_packet)
+				#print("this_packet A: ",this_packet)
 				is_socket_empty=False
 				while(not is_socket_empty):
-					print("this_packet B: ",this_packet)
+					#print("this_packet B: ",this_packet)
 					try:
 						this_obj,json_end=self.decoder.raw_decode(this_packet)
 						self.__enqueue(this_obj)
@@ -87,11 +87,13 @@ class ConnectionCore(threading.Thread):
 				#pass #type changed to None during execution
 			except ConnectionResetError:
 				self.__is_error=True
-			if(self.RATE_LIMIT_SECONDS>0 and len(data)==0): time.sleep(self.RATE_LIMIT_SECONDS)
+			#if(self.RATE_LIMIT_SECONDS>0 and len(data)==0): #sleep if no data received this iteration
+			#	time.sleep(self.RATE_LIMIT_SECONDS) #managed through CONNECTION_TIMEOUT_SECONDS
 		self.dispose()
 	
 	#open the communication channel with the other comptuer
 	#sets the socket and connection variables
+	#halts execution until a connection is established
 	def connect(self):
 		if(self.is_server): #for servers, both create the server AND wait for a client to connect
 			if(self.__is_alive):
@@ -108,6 +110,9 @@ class ConnectionCore(threading.Thread):
 							pass #server_socket is None
 						except OSError:
 							pass #[Errno 9] Bad file descriptor
+						if(self.RATE_LIMIT_SECONDS>0 and not self.__is_connected):
+							#print("Server wait for client to appear...")
+							time.sleep(self.RATE_LIMIT_SECONDS)
 				except socket.timeout:
 					pass #looking for new clients, if none found, move on
 				except AttributeError:
@@ -123,17 +128,22 @@ class ConnectionCore(threading.Thread):
 					self.__is_connected=True
 				except socket.error as msg:
 					pass #silence connection errors
-				if(self.RATE_LIMIT_SECONDS>0 and not self.__is_connected): time.sleep(self.RATE_LIMIT_SECONDS)
-			self.__is_connected=True
+				if(self.RATE_LIMIT_SECONDS>0 and not self.__is_connected):
+					#print("Client wait for server to appear...")
+					time.sleep(self.RATE_LIMIT_SECONDS)
 	
 	def __getServerSocket(self,ip_address,port_number):
 		skt=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		skt.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1) #allow back-to-back connections/build-tests
+		#(otherwise there is a 60 second delay before the server can be recreated.  During this delay window
+		#errno 98 will be created)
 		skt.settimeout(self.CONNECTION_TIMEOUT_SECONDS)
 		try:
 			skt.bind((ip_address,port_number))
 			skt.listen(self.MAX_CONNECTIONS)
 			return skt
 		except socket.error as msg:
+			print("ConnectionCore.__getServerSocket error: ",msg)
 			pass
 		return None
 	
@@ -175,6 +185,7 @@ class ConnectionCore(threading.Thread):
 	
 	def disconnect(self):
 		self.__is_alive=False
+		self.join()
 		
 	def is_connected(self):
 		return self.__is_connected
