@@ -43,7 +43,7 @@ class Discrete:
 	#https://raspberrypi.stackexchange.com/questions/53326/problem-using-i2c-with-ioctl-and-gpios-with-wiringpi-simultaneously/53330#53330
 	#setting wiringpi i2c pins as GPIOs will lock up the interface and require a reboot to clear
 	#[forward,reverse] physical pins: 1 is ON/True, 0/False is stop
-	WHEEL_PINS={FRONT_LEFT:[7,11], #physcial pin numbers
+	WHEEL_PINS={FRONT_LEFT:[11,7],#[7,11], #physcial pin numbers
 				REAR_LEFT:[13,15],
 				FRONT_RIGHT:[12,16],
 				REAR_RIGHT:[18,22],
