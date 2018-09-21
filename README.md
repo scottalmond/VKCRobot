@@ -84,3 +84,11 @@ ref EscapeRoom
 
 edited /etc/rc.local to add line:
 python3 /home/pi/Documents/VKCRobot/src/build_test.py &
+
+--
+
+multi-touch:
+cd /home/pi/Documents/lib/
+git clone https://github.com/pimoroni/python-multitouch.git
+cd python-multitouch/library/
+sudo python3 setup.py install
