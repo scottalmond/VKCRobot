@@ -88,6 +88,7 @@ while(True):
 			pwm_scope=command["scope"]
 			if(pwm_scope=="reset"):
 				pwm_state[channel_index]=(pwm_max[channel_index]+pwm_min[channel_index])/2
+				pwm.set_servo(channel_index,pwm_state[channel_index])
 			elif(pwm_scope=="delta"):
 				delta=command["value"]
 				#print(pwm_state[channel_index],"+",delta,"=",pwm_state[channel_index]+delta)

@@ -8,7 +8,8 @@ class Camera:
 	
 	def __init__(self):
 			self.camera = PiCamera()
-			self.camera.resolution=(1640,1232)
+			#self.camera.resolution=(1640,1232)
+			self.camera.resolution=(3280,2464)
 			#self.rawCapture = PiRGBArray(self.camera)
 			 
 			# allow the camera to warmup
