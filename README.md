@@ -92,3 +92,7 @@ cd /home/pi/Documents/lib/
 git clone https://github.com/pimoroni/python-multitouch.git
 cd python-multitouch/library/
 sudo python3 setup.py install
+
+-------
+
+sudo apt-get install arduino

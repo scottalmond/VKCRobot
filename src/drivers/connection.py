@@ -48,7 +48,7 @@ class Connection:
 	def is_connected(self):
 		return self.core.is_connected()
 	
-	def connect(self):
+	def start(self):
 		self.core.start()
 		
 	def disconnect(self):

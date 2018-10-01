@@ -80,15 +80,21 @@ class ConnectionCore(threading.Thread):
 					except json.decoder.JSONDecodeError:
 						previous_packet+=this_packet
 						is_socket_empty=True
-			except socket.timeout:
-				pass #if no input received, then move on to next task
+			except socket.timeout as err:
+				#if no input received, then move on to next task
+				pass#print("ConnectionCore.run socket.timeout: ",err)
 			except AttributeError as err:
-				print(err)
+				print("ConnectionCore.run AttributeError: ",err)
 				#pass #type changed to None during execution
-			except ConnectionResetError:
+			except ConnectionResetError as err:
 				self.__is_error=True
+				print("ConnectionCore.run ConnectionResetError: ",err)
 			#if(self.RATE_LIMIT_SECONDS>0 and len(data)==0): #sleep if no data received this iteration
 			#	time.sleep(self.RATE_LIMIT_SECONDS) #managed through CONNECTION_TIMEOUT_SECONDS
+			if(self.__is_alive and self.__is_error):#attempt to reestablish connection after it is broken
+				self.__is_error=False
+				self.dispose()
+				self.connect()
 		self.dispose()
 	
 	#open the communication channel with the other comptuer
@@ -150,14 +156,20 @@ class ConnectionCore(threading.Thread):
 	#super class send an item outbound immediately
 	#input is an object: dict, list, string, int, etc
 	def send(self,message_obj):
+		target=self.connection if self.is_server else self.socket
+		if(not self.__is_connected or target is None):
+			return False#unable to send to a broken connection
 		try:
-			target=self.connection if self.is_server else self.socket
 			target.send(json.dumps(message_obj).encode())
 			return True
 		except AttributeError as err:
-			pass
+			print("ConnectionCore.send AttributeError:",err)
 		except BrokenPipeError as err:
 			self.__is_error=True
+			print("ConnectionCore.send BrokenPipeError:",err)
+		except socket.timeout as err:
+			self.__is_error=True
+			print("ConnectionCore.send socket.timeout:",err)
 		return False
 		
 	#return pointer to latest queue JOSN object without removing it from the queue
@@ -195,8 +207,11 @@ class ConnectionCore(threading.Thread):
 	def dispose(self):
 		if(self.is_server and not self.connection is None):
 			self.connection.close()
+			self.connection=None
 		if(not self.socket is None):
 			self.socket.close()
+			self.socket=None
+		self.__is_connected=False
 			
 		
 	#returns IP address String
