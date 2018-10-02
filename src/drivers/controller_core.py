@@ -18,7 +18,7 @@ while(not this_conn.is_connected()):
 	time.sleep(0.1)
 	
 print("Create GUI...")#make GUI...
-is_windowed=False
+is_windowed=True
 gui=GUI(is_windowed)
 	
 last_watchdog_time=0

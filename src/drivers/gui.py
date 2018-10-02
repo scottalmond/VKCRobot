@@ -32,6 +32,7 @@ Connections:
 from periphreals.multitouch.library import ft5406
 from periphreals.discrete import Discrete
 from periphreals.gui.touchable import Touchable
+from periphreals.camera import Camera
 import numpy as np
 
 class GUI:
@@ -52,6 +53,8 @@ class GUI:
 		self.controller_pic_count=0
 		self.__is_alive=True
 		self.__createButtons()
+		print("Create Camera...")
+		self.camera=Camera()
 		
 	def __createButtons(self):
 		self.button_list={
@@ -155,8 +158,9 @@ class GUI:
 			command["scope"]="ROBOT"
 			self.outbound_message_queue.append(command)
 		else:
+			self.camera.snapshot()
 			self.controller_pic_count+=1
-			pass #placeholder to take picture locally on controller
+			#pass #placeholder to take picture locally on controller
 		
 	#given a user input x [-1.0 (down),+1.0 (up/forward)] and y [-1.0 (left) to +1.0 (right)]
 	#get motor commands
@@ -171,12 +175,12 @@ class GUI:
 			angle=np.arctan2(y,x)#radians
 			left_angle=angle+np.pi/4 #left wheels "max speed" at Q1 (+45 deg) user input
 			right_angle=angle-np.pi/4 #right wheels "max speed" at Q2 (+135 deg) user input
-			scale=np.clip(np.sqrt(x*x+y*y)+.15,0,1)
+			scale=np.clip(np.sqrt(x*x+y*y),0,1)
 			left_speed=scale*np.clip(2*np.sin(left_angle),-1,1)
 			right_speed=scale*np.clip(2*np.sin(right_angle),-1,1)
-			if(scale<0.3): #dead zone in center
-				left_speed=0
-				right_speed=0
+			#if(scale<0.12): #dead zone in center
+			#	left_speed=0
+			#	right_speed=0
 		command[Discrete.FRONT_LEFT]=left_speed
 		command[Discrete.REAR_LEFT]=left_speed
 		command[Discrete.FRONT_RIGHT]=right_speed
