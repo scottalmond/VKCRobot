@@ -22,6 +22,15 @@ class Camera:
 		#cv2.imwrite(filename,image)
 		self.camera.capture(filename)
 		
+	#def getFrame(self):#get an image from the camera, convert to 400x480 for display
+		
+		
+	#def processFrame(self,frame,getQR):
+	
+	#@static_method
+	#def build_test():
+	#	self.rawCamera=PiRGBArray(self.camera
+		
 
 if __name__ == "__main__":
 	print("START")
