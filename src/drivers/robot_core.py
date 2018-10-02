@@ -1,3 +1,5 @@
+#quit()
+
 #create socket server, wait for connection
 #receive commands
 #transmit state
@@ -17,7 +19,7 @@ is_server=True
 this_conn=Connection(is_server,server_def["ip_address"],server_def["port"])
 
 print("Pause to form connection...")
-this_conn.connect() #NOT blocking, exectuion will continue past here even if link is not established
+this_conn.start() #NOT blocking, exectuion will continue past here even if link is not established
 while(not this_conn.is_connected()):
 	time.sleep(0.1) #wait for opposite end of connection to appear
 
@@ -47,8 +49,8 @@ MAX_AUTONOMUS_SECONDS=3 #how long robot will continue to move before self-termin
 
 wheel_state={Discrete.FRONT_LEFT:0,Discrete.REAR_LEFT:0,Discrete.FRONT_RIGHT:0,Discrete.REAR_RIGHT:0}
 #		   0   1   2   3   4   5   6   7
-pwm_min=[ 90, 20,  0, 32,  0,  0,  0, 20]
-pwm_max=[180,150,180, 52,120,100,110,150]
+pwm_min=[ 90,-20,-90, 22,  0,-90,  0, 20]
+pwm_max=[205,200,210, 62,120,360,110,150]
 pwm_state=[]
 for index in range(len(pwm_max)):
 	pwm_state.append((pwm_max[index]+pwm_min[index])/2)

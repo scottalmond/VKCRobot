@@ -151,9 +151,26 @@ class PWM:
 					time.sleep(2)
 			loop_count-=1
 		pwm.dispose()
+		
+	@staticmethod
+	def build_test_2():
+		#move hand servo
+		import time
+		pwm=PWM()
+		servo_channel=3
+		angle_degrees=-100
+		while(angle_degrees<1000):
+			
+		#for angle_degrees in range(1):#[0:10:180]:
+			print(angle_degrees)
+			pwm.set_servo(servo_channel,angle_degrees)
+			time.sleep(0.2)
+			angle_degrees+=10
+		
 
 if __name__ == "__main__":
 	print("START")
 	loop_count=1
-	PWM.build_test(loop_count)
+	#PWM.build_test(loop_count)
+	PWM.build_test_2()
 	print("DONE")

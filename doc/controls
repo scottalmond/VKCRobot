@@ -1,0 +1,30 @@
+wheels
+x,y,w,h
+410, 90, 300, 300
+center 560, 240
+
+prev joint
+40, 40, 100, 60
+
+joint id
+
+next joint
+200, 40, 100, 60
+
+minus motion
+
+
+center motion
+
+
+next motion
+
+motion size small
+
+motion size large
+
+state current
+
+control camera
+
+robot camera
