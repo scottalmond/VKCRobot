@@ -96,3 +96,8 @@ sudo python3 setup.py install
 -------
 
 sudo apt-get install arduino
+
+--
+
+split screen mjpg
+omxplayer --win 0,0,400,480 -r --live 'http://192.168.1.113:8000/stream.mjpg'
