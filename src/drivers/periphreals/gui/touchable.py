@@ -1,3 +1,5 @@
+import numpy as np
+
 class Touchable:
 	def __init__(self,shape,x,y,w,h,button_color,label,font_color,pygame,screen,font):
 		self.shape=shape
@@ -36,3 +38,26 @@ class Touchable:
 		    ( self.y < in_y < (self.y + self.h) ) ):
 		    return True
 		return False
+		
+	#given a touch location [x,y], and a x_range [min,max] and y range [min,max]
+	# generate the corresponding linear fit betweenn the min and max
+	def scale_to_bounds(self,touch_loc,x_range,y_range):
+		out_list=[]
+		for is_y in [False,True]:
+			scaled=np.interp(int(touch_loc[is_y]),[self.y,self.y+self.h] if is_y else [self.x,self.x+self.w],y_range if is_y else x_range)
+			out_list.append(scaled)
+		return out_list
+		
+	@staticmethod
+	def build_test():
+		print("Touchable build test")
+		touchable=Touchable("SQUARE",100,200,10,20,None,None,None,None,None,None)
+		pos=[101,210]
+		print("Position input: ",pos);
+		scaled=touchable.scale_to_bounds(pos,[-10,10],[0,1])
+		print("Scaled: ",scaled)
+
+if __name__ == "__main__":
+	print("START")
+	Touchable.build_test()
+	print("DONE")

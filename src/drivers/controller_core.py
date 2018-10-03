@@ -5,10 +5,12 @@
 from connection import Connection,SERVER_DEFINITION
 import time
 from gui_TS import GUI
+#import omxplayer.player
 
 print("START")
 
-is_benchtop=True #no robot present
+is_benchtop=False #True: no robot present
+is_windowed=True
 server_def=SERVER_DEFINITION.ROBOT.value
 is_server=False
 this_conn=Connection(False,server_def["ip_address"],server_def["port"])
@@ -19,8 +21,13 @@ if(not is_benchtop):
 	while(not this_conn.is_connected()):
 		time.sleep(0.1)
 	
+#print("Start live video feed...")
+#video_uri='http://192.168.1.113:8000/stream.mjpg'
+##video_args=['--win','0,0,400,480','-r','--live','\'http://192.168.1.113:8000/stream.mjpg\'']
+#video_player=omxplayer.player.OMXPlayer(video_uri)
+#video_player.set_video_pos(0,0,400,480)
+	
 print("Create GUI...")#make GUI...
-is_windowed=True
 gui=GUI(is_windowed)
 	
 last_watchdog_time=0
@@ -55,7 +62,7 @@ while(gui.is_alive()):
 	time.sleep(0.01)
 	
 gui.dispose()
-		
+#video_player.quit()
 	
 
 

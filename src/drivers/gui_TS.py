@@ -34,7 +34,8 @@ from periphreals.discrete import Discrete
 from periphreals.gui.touchable import Touchable
 from periphreals.camera import Camera
 import numpy as np
-import pygame
+import copy
+#import pygame
 
 class GUI:
 	def __init__(self,is_windowed):
@@ -47,6 +48,7 @@ class GUI:
 		self.pwm_index=0
 		self.pwm = 1
 		self.pwm_state=[0,1,2,3,4,5,6,7]
+		self.led_state=[False,False,False,False]
 		self.MAX_PWM_INDEX=7 #shall be no more than 7
 		self.wheels_x=0.0
 		self.wheels_y=0.0
@@ -127,16 +129,16 @@ class GUI:
 					self.__is_alive=False
 				elif(button_name =="NEXT"): #Change to the next tab view
 					self.tab_next()	
-					button_object.screen.fill(pygame.Color("black"))
+					button_object.screen.fill(self.pygame.Color("black"))
 				elif(button_name=="PREV"): #Change to the prev tab view
 					self.tab_prev()
-					button_object.screen.fill(pygame.Color("black"))
+					button_object.screen.fill(self.pygame.Color("black"))
 				elif(button_name =="LEFT_TOP"): #gives previous screen
 					self.prev_view()	
-					button_object.screen.fill(pygame.Color("black"))
+					button_object.screen.fill(self.pygame.Color("black"))
 				elif(button_name=="LEFT_BOT"): #gives next screen 
 					self.next_view()
-					button_object.screen.fill(pygame.Color("black"))	
+					button_object.screen.fill(self.pygame.Color("black"))	
 					
 		if(self.tab == 1.0):
 			for button_name,button_object in self.button_list1.items():
@@ -176,35 +178,39 @@ class GUI:
 					if(button_name == "HOME"):
 						self.home_arm()
 					if(button_name == "PWM_PREV"):
-						button_object.screen.fill(pygame.Color("black"))
+						button_object.screen.fill(self.pygame.Color("black"))
 						self.next_pwm()
 					if(button_name == "PWM_NEXT"):
-						button_object.screen.fill(pygame.Color("black"))
+						button_object.screen.fill(self.pygame.Color("black"))
 						self.prev_pwm()
 						
-			for button_name,button_object in self.pwm_list.items():
-				if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
-					if(button_name == "PWM1" and self.pwm == 1):
-						print("Send packets for PWM 0 & 1")
-						self.send_pwm01(touch.position[0],touch.position[1])
-					if(button_name == "PWM2" and self.pwm == 2):
-						print("Send packets for PWM 1 & 2")
-						self.send_pwm23(touch.position[0],touch.position[1])
-					if(button_name == "PWM3" and self.pwm == 3):
-						print("Send packets for PWM 3 & 4")	
-						self.send_pwm45(touch.position[0],touch.position[1])
+			#for button_name,button_object in self.pwm_list.items():
+				#if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
+					#if(button_name == "PWM1" and self.pwm == 1):
+						#print("Send packets for PWM 0 & 1")
+						#self.send_pwm01(touch.position[0],touch.position[1])
+					#if(button_name == "PWM2" and self.pwm == 2):
+						#print("Send packets for PWM 1 & 2")
+						#self.send_pwm23(touch.position[0],touch.position[1])
+					#if(button_name == "PWM3" and self.pwm == 3):
+						#print("Send packets for PWM 3 & 4")	
+						#self.send_pwm45(touch.position[0],touch.position[1])
 						
 		if(self.tab == 3.0):			
 			for button_name,button_object in self.button_list3.items():
 				if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
 					if(button_name=="LED1"):
-						self.light1_on()
+						#self.light1_on()
+						self.led_toggle(0)
 					elif(button_name == "LED2"):
-						self.light2_on()
+						#self.light2_on()
+						self.led_toggle(1)
 					elif(button_name == "LED3"):
-						self.light3_on()
+						#self.light3_on()
+						self.led_toggle(2)
 					elif(button_name == "LED4"):
-						self.light4_on()
+						#self.light4_on()
+						self.led_toggle(3)
 					elif(button_name == "EXPOSURE"):
 						x_pos = touch.position[0]
 						self.set_exposure(x_pos)
@@ -226,6 +232,19 @@ class GUI:
 				if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
 					if(button_name =="PWM1"):
 						print("ARM")
+						
+			for button_name,button_object in self.pwm_list.items():
+				if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
+					scaled_coords=button_object.scale_to_bounds(touch.position,[0.0,1.0],[-1.0,1.0])
+					if(button_name == "PWM1" and self.pwm == 1):
+						print("Send packets for PWM 0 & 1")
+						self.send_pwm01(scaled_coords[0],scaled_coords[1])
+					if(button_name == "PWM2" and self.pwm == 2):
+						print("Send packets for PWM 2 & 3")
+						self.send_pwm23(scaled_coords[0],scaled_coords[1])
+					if(button_name == "PWM3" and self.pwm == 3):
+						print("Send packets for PWM 4 & 5")	
+						self.send_pwm45(scaled_coords[0],scaled_coords[1])
 		if(self.tab == 3):
 			for button_name,button_object in self.button_list3.items():
 				if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
@@ -287,12 +306,12 @@ class GUI:
 		self.outbound_message_queue.append(command1)
 		self.outbound_message_queue.append(command2)
 		
-	def send_pwm34(self, x, y):
+	#def send_pwm34(self, x, y):
+	def send_pwm45(self, x, y):
 		command1 = {"target":"PWM","command":"set","index":4,"value":x}
 		command2 = {"target":"PWM","command":"set","index":5,"value":y}
 		self.outbound_message_queue.append(command1)
 		self.outbound_message_queue.append(command2)
-		
 		
 	def robot_home(self):
 		command = {"target": "WHEEL", "command": "home"}
@@ -314,22 +333,29 @@ class GUI:
 		command = {"target":"PWM","command":"home"}
 		self.outbound_message_queue.append(command)
 		
-	def light1_on(self):
-		command = {"target":"camera", "command":"leds","value":[True, False, False, False]}
+	def led_toggle(self,index):
+		print("LED_",index," toggle")
+		next_led_state=copy.deepcopy(self.led_state)
+		next_led_state[index]=not next_led_state[index]
+		command = {"target":"camera", "command":"leds","value":next_led_state}
 		self.outbound_message_queue.append(command)	
+		
+	#def light1_on(self):
+		#command = {"target":"camera", "command":"leds","value":[True, False, False, False]}
+		#self.outbound_message_queue.append(command)	
 
-	def light2_on(self):
-		command = {"target":"camera", "command":"leds","value":[False, True, False, False]}
-		self.outbound_message_queue.append(command)	
+	#def light2_on(self):
+		#command = {"target":"camera", "command":"leds","value":[False, True, False, False]}
+		#self.outbound_message_queue.append(command)	
 	
-	def light3_on(self):
-		command = {"target":"camera", "command":"leds","value":[False, False, True, False]}
-		self.outbound_message_queue.append(command)
+	#def light3_on(self):
+		#command = {"target":"camera", "command":"leds","value":[False, False, True, False]}
+		#self.outbound_message_queue.append(command)
 	
-	def light4_on(self):
-		print("L4 on")
-		command = {"target":"camera", "command":"leds","value":[False, False, False, True]}
-		self.outbound_message_queue.append(command)
+	#def light4_on(self):
+		#print("L4 on")
+		#command = {"target":"camera", "command":"leds","value":[False, False, False, True]}
+		#self.outbound_message_queue.append(command)
 	
 	def set_exposure(self, x):
 		command = {"target":"CAMERA","command":"exposure","value": x }
@@ -404,6 +430,7 @@ class GUI:
 			self.pwm_state=status["pwm"]
 			self.robot_pic_count=status["camera"]
 			self.link_counter=status["counter"]
+			self.led_state=status["led"]
 		
 	def __create2Dgraphics(self,is_windowed):
 		import pygame
