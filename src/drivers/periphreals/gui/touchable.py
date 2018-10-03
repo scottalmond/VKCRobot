@@ -20,7 +20,16 @@ class Touchable:
 		if(not self.label is None and len(self.label)>0):
 			rendered_string=self.font.render(self.label,False,self.font_color)
 			self.screen.blit(rendered_string,(self.x,self.y))
-		
+	
+	#def remove(self):
+	#	if(self.shape=="CIRCLE"):
+	#		self.pygame.clear.ellipse(self.screen,self.button_color,(self.x,self.y,self.w,self.h),0)
+	#	elif(self.shape=="RECTANGLE"):
+	#		self.pygame.clear.rect(self.screen,self.button_color,(self.x,self.y,self.w,self.h))
+	#	if(not self.label is None and len(self.label)>0):
+	#		rendered_string=self.font.render(self.label,False,self.font_color)
+	#		self.screen.blit(rendered_string,(self.x,self.y))
+			
 	#detemrine if coordinates (of mouse click/drag) is in bounds of button
 	def is_in_bounds(self,in_x,in_y):
 		if( ( self.x < in_x < (self.x + self.w) ) and
