@@ -451,6 +451,8 @@ class GUI:
 		if(not status is None):# and type(status)==type({})):
 			#self.robot_pic_count=status["camera"]
 			self.pwm_state=status["pwm"]
+			self.button_list2["LOOP"].is_enabled=status["pwm"]["is_looping"]
+			self.button_list2["SAVE"].label="SV "+str(status["pwm"]["loop_state_count"])
 			
 			#global status
 			self.link_counter=status["counter"]
