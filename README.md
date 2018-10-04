@@ -102,3 +102,10 @@ sudo apt-get install arduino
 split screen mjpg
 omxplayer --win 0,0,400,480 -r --live 'http://192.168.1.113:8000/stream.mjpg'
 omxplayer --win 0,0,400,480 --no-keys --no-osd --live 'http://192.168.1.113:8000/stream.mjpg'
+
+--
+
+copy all log files from robot to controller:
+ssh pi@192.168.1.113
+cd Documents/log/
+scp * 192.168.1.112:/home/pi/Documents/VKCRobot/analysis/

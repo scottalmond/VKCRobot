@@ -32,7 +32,7 @@ Connections:
 from periphreals.multitouch.library import ft5406
 from periphreals.discrete import Discrete
 from periphreals.gui.touchable import Touchable
-from periphreals.camera import Camera
+#from periphreals.camera import Camera
 import numpy as np
 import copy
 #import pygame
@@ -58,8 +58,8 @@ class GUI:
 		self.__is_alive=True
 		self.__createButtons()
 		self.tab = 1.0 #Start on view 1
-		print("Create Camera...")
-		self.camera=Camera()
+		#print("Create Camera...")
+		#self.camera=Camera()
 		
 	def __createButtons(self):
 		self.button_listS={ #Static buttons
@@ -77,7 +77,7 @@ class GUI:
 			#"CAM_CONTROLLER":Touchable("RECTANGLE", 40,340,100,100,(255,0,0),"PIC C",(255,255,255),self.pygame,self.screen_2d,self.font),
 			#"CAM_ROBOT":     Touchable("RECTANGLE",140,340,100,100,(255,0,0),"PIC R",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"WHEEL":         Touchable("CIRCLE",   450,90,300,300,(255,0,0),"Motor Controller",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"HOME":			  Touchable("Rectangle",420,300,50,50,(0,255,0),"Home",(255,255,255),self.pygame,self.screen_2d,self.font)
+			"HOME":			  Touchable("RECTANGLE",420,300,50,50,(0,255,0),"Home",(255,255,255),self.pygame,self.screen_2d,self.font)
 
 			}
 			
@@ -85,20 +85,23 @@ class GUI:
 			"PWM_PREV":		Touchable("RECTANGLE", 700,75,100,50,(255,0,0),"PWM Next",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"PWM_NEXT":		Touchable("RECTANGLE", 400,75,100,50,(255,0,0),"PWM Prev",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"CLEAR":         Touchable("RECTANGLE",   400,130,50,50,(0,0,255),"clear",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"SAVE":         Touchable("RECTANGLE",   400,190,50,50,(0,0,255),"save",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"HOME":			  Touchable("RECTANGLE",400,190,50,50,(0,255,0),"Home",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"LOOP":         Touchable("RECTANGLE",   400,250,50,50,(0,0,255),"loop",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"HOME":			  Touchable("Rectangle",400,300,50,50,(0,255,0),"Home",(255,255,255),self.pygame,self.screen_2d,self.font)
+			"SAVE":         Touchable("RECTANGLE",   400,310,50,50,(0,0,255),"save",(255,255,255),self.pygame,self.screen_2d,self.font)
 
 			}
-		
+			
 		self.button_list3={ #GUI View 3
-			"LED1":         Touchable("RECTANGLE",400,80,50,50,(255,0,0),"Light1",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"LED2":         Touchable("RECTANGLE",400,155,50,50,(255,0,0),"Light2",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"LED3":         Touchable("RECTANGLE",400,230,50,50,(255,0,0),"Light3",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"LED4":         Touchable("RECTANGLE",400,305,50,50,(255,0,0),"Light4",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"LED1":         Touchable("RECTANGLE",400,80,50,50,(255,0,0),"LED1",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"LED2":         Touchable("RECTANGLE",400,155,50,50,(255,0,0),"LED2",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"LED3":         Touchable("RECTANGLE",400,230,50,50,(255,0,0),"LED3",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"LED4":         Touchable("RECTANGLE",400,305,50,50,(255,0,0),"LED4",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"DEPTH":        Touchable("DEPTH",    400,360,50,50,(255,0,0),"MAP",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"HOLD":         Touchable("HOLD",     400,430,50,50,(255,0,0),"HOLD",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"QRtext":       Touchable("RECTANGLE",470,170,400,300,(255,0,0),"QR text",(255,255,255),self.pygame,self.screen_2d,self.font),		
-			"EXPOSURE":     Touchable("RECTANGLE",470,90,220,70,(255,0,0),"Exposure",(255,255,255),self.pygame,self.screen_2d,self.font),		
-			"AUTO":         Touchable("RECTANGLE",700,90,70,70,(255,0,0),"Auto",(255,255,255),self.pygame,self.screen_2d,self.font)		
+			"EXPOSURE":     Touchable("RECTANGLE",470,90,210,70,(255,0,0),"Exposure",(255,255,255),self.pygame,self.screen_2d,self.font),		
+			"AUTO":         Touchable("RECTANGLE",690,90,50,70,(255,0,0),"Auto",(255,255,255),self.pygame,self.screen_2d,self.font),		
+			"INVERT":          Touchable("RECTANGLE",750,90,50,70,(255,0,0),"Inv",(255,255,255),self.pygame,self.screen_2d,self.font)		
 
 			}
 			
@@ -211,11 +214,18 @@ class GUI:
 					elif(button_name == "LED4"):
 						#self.light4_on()
 						self.led_toggle(3)
+					elif(button_name == "DEPTH"):
+						self.lidar_depth_map()
+					elif(button_name == "HOLD"):
+						self.lidar_hold()
 					elif(button_name == "EXPOSURE"):
-						x_pos = touch.position[0]
-						self.set_exposure(x_pos)
+						ratio=button_object.scale_to_bounds(touch.position,[0.0,1.0],[0.0,1.0])
+						print("EXPOSURE: touch: ",touch.position,", ratio: ",ratio)
+						self.set_exposure(ratio[0])
 					elif(button_name == "AUTO"):
 						self.auto_light()
+					elif(button_name == "INVERT"):
+						self.invert_image()
 					
 	def event_move(self,event,touch):
 		print("event_release: ",touch.id,", ",touch.position, ", ",self.tab)
@@ -333,11 +343,19 @@ class GUI:
 		command = {"target":"PWM","command":"home"}
 		self.outbound_message_queue.append(command)
 		
+	def lidar_hold(self):
+		command={"target":"LIDAR","command":"static"}
+		self.outbound_message_queue.append(command)
+		
+	def lidar_depth_map(self):
+		command={"target":"LIDAR","command":"depth_map"}
+		self.outbound_message_queue.append(command)
+		
 	def led_toggle(self,index):
 		print("LED_",index," toggle")
 		next_led_state=copy.deepcopy(self.led_state)
 		next_led_state[index]=not next_led_state[index]
-		command = {"target":"camera", "command":"leds","value":next_led_state}
+		command = {"target":"CAMERA", "command":"leds","value":next_led_state}
 		self.outbound_message_queue.append(command)	
 		
 	#def light1_on(self):
@@ -365,6 +383,10 @@ class GUI:
 		command = {"target":"CAMERA","command":"exposure","value": "auto" }
 		self.outbound_message_queue.append(command)
 		
+	def invert_image(self):
+		command = {"target":"CAMERA","command":"invert" }
+		self.outbound_message_queue.append(command)
+		
 	#+/- button on PWM selection
 	def pwm_change_index(self,is_plus):
 		if(is_plus):
@@ -387,15 +409,15 @@ class GUI:
 			command["value"]=(+1 if is_plus else -1)*(self.SMALL_SCALE_DEGREES if self.is_small_scale else self.BIG_SCALE_DEGREES)
 		self.outbound_message_queue.append(command)
 		
-	def take_picture(self,is_robot):
-		if(is_robot):
-			command=self.getBaseCameraCommand()
-			command["scope"]="ROBOT"
-			self.outbound_message_queue.append(command)
-		else:
-			self.camera.snapshot()
-			self.controller_pic_count+=1
-			#pass #placeholder to take picture locally on controller
+	#def take_picture(self,is_robot):
+		#if(is_robot):
+			#command=self.getBaseCameraCommand()
+			#command["scope"]="ROBOT"
+			#self.outbound_message_queue.append(command)
+		#else:
+			#self.camera.snapshot()
+			#self.controller_pic_count+=1
+			##pass #placeholder to take picture locally on controller
 		
 	#given a user input x [-1.0 (down),+1.0 (up/forward)] and y [-1.0 (left) to +1.0 (right)]
 	#get motor commands
@@ -426,11 +448,45 @@ class GUI:
 		
 	#ingest packet from robot about robot state
 	def setStatus(self,status):
-		if(not status is None):
+		if(not status is None):# and type(status)==type({})):
+			#self.robot_pic_count=status["camera"]
 			self.pwm_state=status["pwm"]
-			self.robot_pic_count=status["camera"]
+			
+			#global status
 			self.link_counter=status["counter"]
-			self.led_state=status["led"]
+			#qr_count=len(status["camera"]["qr_list"])
+			
+			#camera
+			if(status["camera"]["exposure"]==0):
+				self.button_list3["EXPOSURE"].is_enabled=False
+				self.button_list3["AUTO"].is_enabled=True
+			else:
+				self.button_list3["EXPOSURE"].is_enabled=True
+				self.button_list3["AUTO"].is_enabled=False
+			self.button_list3["INVERT"].is_enabled=status["camera"]["is_invert"]
+				
+			#Lidar
+			self.button_list3["DEPTH"].is_enabled=status["lidar"]["is_depth_map"]
+			self.button_list3["HOLD"].is_enabled=status["lidar"]["is_lidar_static"]
+			
+			#LED
+			self.led_state=status["leds"]
+			self.button_list3["LED1"].is_enabled=self.led_state[0]
+			self.button_list3["LED2"].is_enabled=self.led_state[1]
+			self.button_list3["LED3"].is_enabled=self.led_state[2]
+			self.button_list3["LED4"].is_enabled=self.led_state[3]
+			
+			#QR
+			qr_list=status["camera"]["qr_list"]
+			qr_string=""
+			QR_BOX_LINE_LENGTH=29 #number of characters
+			for qr_line in qr_list:
+				qr_clip="*"+qr_line["string"]
+				while(len(qr_clip)>QR_BOX_LINE_LENGTH):
+					qr_string+=qr_clip[0:QR_BOX_LINE_LENGTH]+"\n"
+					qr_clip=qr_clip[QR_BOX_LINE_LENGTH:]
+				qr_string+=qr_clip+"\n"
+			self.button_list3["QRtext"].label=qr_string
 		
 	def __create2Dgraphics(self,is_windowed):
 		import pygame
