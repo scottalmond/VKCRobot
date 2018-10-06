@@ -435,7 +435,7 @@ class VideoStream:
 
 # main
 
-streamVideo = VideoStream().start()
+streamVideo = VideoStream((400,480)).start()
 
 streamVideo.setShowCvFlag(False)
 streamVideo.setEdgeDetectionFlag(False)
@@ -446,7 +446,7 @@ detection = Detection()
 
 # web streaming is on another thread
 try:
-    address = ('', 8000)
+    address = ('192.168.1.113', 8000)
     server = StreamingServer(address, StreamingHandler)
     server.serve_forever()
 finally:

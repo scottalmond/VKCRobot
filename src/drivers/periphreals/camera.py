@@ -7,6 +7,8 @@ class Camera:
 	PICTURE_PATH='/home/pi/Documents/pics/'
 	
 	def __init__(self):
+		self.is_enabled=False
+		if(self.is_enabled):
 			self.camera = PiCamera()
 			#self.camera.resolution=(1640,1232)
 			self.camera.resolution=(3280,2464)
@@ -16,11 +18,12 @@ class Camera:
 			#time.sleep(0.1)
 		
 	def snapshot(self):
-		#self.camera.capture(self.rawCapture, format="bgr")
-		#image = self.rawCapture.array
-		filename=self.PICTURE_PATH+str(int(time.time()))+".jpg"
-		#cv2.imwrite(filename,image)
-		self.camera.capture(filename)
+		if(self.is_enabled):
+			#self.camera.capture(self.rawCapture, format="bgr")
+			#image = self.rawCapture.array
+			filename=self.PICTURE_PATH+str(int(time.time()))+".jpg"
+			#cv2.imwrite(filename,image)
+			self.camera.capture(filename)
 		
 	#def getFrame(self):#get an image from the camera, convert to 400x480 for display
 		

@@ -96,3 +96,10 @@ sudo python3 setup.py install
 -------
 
 sudo apt-get install arduino
+
+--
+
+camera:
+sudo pip3 install scipy
+sudo pip3 install imutils
+sudo pip3 install numpy --upgrade
