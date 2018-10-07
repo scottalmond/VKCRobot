@@ -1,8 +1,23 @@
+//code functions:
+//read serial input, ex:
+//  "1,1,0,0\n" --> turns on LEDS 0 and 1, rest OFF
+//  "0,1,1,0\n" --> turns on LEDS 1 and 2, rest OFF
+//read absolute encoders
+//parse raw readings to engineering units (0-127 positions in circle correspond to 0 to 360 degrees)
+//output (10 numbers in csv format with a new line character at the end):
+//  first 3 numbers are revolution count, sub-position count, and error count for encoder A
+//  next 3 numbers are the same for encoder B
+//  last four numbers of ON (1) and OFF (0) state of the four LEDS
+//  "11,22,33,44,55,66,1,0,0,1\n" --> Encoder A is on revolution 11, with a subposition of 22 (360*22/128 = degrees), and has encountered 33 bad readings
+//    Encoder B is on revolution 44, with a subposition of 55 (360*55/128 = degrees) nad has encoutnered 66 bad readings
+//    LED 0 is ON (1), LED 1 is OFF (0), LED 2 is OFF (0), LED 3 is ON (1)
 
+//consts
 const int ENCODER_COUNT=2;
 const int PINS_PER_ENCODER=8;
 const int LED_COUNT=4;
 
+//encoders
 //pin assignments
 // MePed Arduino AtMega328 Nano pinout: http://www.meped.io/sites/default/files/inline-images/mePed%20PCB%20v1.3%20Labels%2C%20500px.jpg
 // EAW0J-C24-AE0128L absolute encoder: https://www.mouser.com/datasheet/2/54/ce-777357.pdf
@@ -12,10 +27,16 @@ const int ENCODER_PINS[ENCODER_COUNT][PINS_PER_ENCODER]={
   /*LSB*/{2,3,4,5,6,7,8,9},/*MSB*/
   /*LSB*/{A7,A6,A5,A4,A3,A2,A1,A0}/*MSB*/
 };
-const int LED_PINS[LED_COUNT]={10,11,12,13};
+const int ENCODER_CODE_LENGTH=256;//number of indexes in lookup table
+const int ENCODER_MAX_VALUE=127;//max value after decrypting
+int ENCODER_LOOKUP[ENCODER_CODE_LENGTH];
+int encoder_revolutions[ENCODER_COUNT]={0,0};//15"wheel circumference, rolls over at 7.5 miles driven since startup
+int encoder_last_position[ENCODER_COUNT]={0,0};
+int encoder_bad_reading_counter[ENCODER_COUNT]{0,0};
 
-const int GRAY_CODE_LENGTH=256;//256;
-int ENCODER_LOOKUP[GRAY_CODE_LENGTH];
+//LEDs
+const int LED_PINS[LED_COUNT]={10,11,12,13};
+boolean led_state[LED_COUNT]={false,false,false,false};
 
 void setup()
 {
@@ -37,36 +58,11 @@ void setup()
     pinMode(pin,OUTPUT);
   }
   Serial.begin(115200);
+  
   //populate lookup table
-  /*for(int gray_code_value=0;gray_code_value<GRAY_CODE_LENGTH;gray_code_value++)
-  {
-    int binary_code=0;
-    int gray_code=0;
-    int prev_msb=0;
-    int conversion=0;
-    int bit_mask=0;
-    // http://electronicstutemaster.blogspot.com/2012/06/simple-method-for-converson-of-gray.html
-    for(int bit_index=7;bit_index>=0;bit_index--)
-    {
-      prev_msb=prev_msb>>1;
-      bit_mask=1<<bit_index;
-      conversion=( gray_code_value & bit_mask ) ^ prev_msb;
-      binary_code |= conversion;
-      prev_msb=conversion;
-    }
-    //Serial.print(gray_code_value,DEC);
-    Serial.print(gray_code_value,BIN);
-    Serial.print("\t");
-    //Serial.println(binary_code,DEC);
-    Serial.print(binary_code,BIN);
-    Serial.print("\t");
-    Serial.print(gray_code_value,DEC);
-    Serial.print("\t");
-    Serial.print(binary_code,DEC);
-    Serial.println();
-  }*/
-  for(int iter=0;iter<GRAY_CODE_LENGTH;iter++)
-    ENCODER_LOOKUP[iter]=-1;//iunvalid value at unspecified index
+  //first step is default invalid values since not every index is used
+  for(int iter=0;iter<ENCODER_CODE_LENGTH;iter++)
+    ENCODER_LOOKUP[iter]=-1;//invalid value at unspecified index
   
   //map raw readings to meaningful values between 0 and 128
   // hard coded from https://www.kynix.com/uploadfiles/pdf0125/EAW0J-C24-AE0128L.pdf
@@ -198,44 +194,119 @@ void setup()
   ENCODER_LOOKUP[ 30]=125;
   ENCODER_LOOKUP[ 94]=126;
   ENCODER_LOOKUP[ 95]=127;
+  
+  for(int encoder_iter=0;encoder_iter<ENCODER_COUNT;encoder_iter++)
+  {
+    encoder_last_position[encoder_iter]=get_encoder_sub_position(encoder_iter);
+    if(encoder_last_position[encoder_iter]<0)
+      encoder_last_position[encoder_iter]=0;//set to 0 on bad reading
+  }
 }
 
-boolean is_high=false;
 void loop()
 {
-  digitalWrite(13,is_high);
-  is_high=!is_high;
-  delay(1000);
-  //ENCODER_COUNT
-  boolean val=0;
-  for(int encoder_iter=0;encoder_iter<1;encoder_iter++)
+  delay(50); //20 ms delay = ~30% load on RPi, 50 ms of delay = ~15% load on RPi
+  parse_serial_input();//accept led input as a string: "0,1,1,0\n1,1,0,0\n" etc
+  for(int led_iter=0;led_iter<LED_COUNT;led_iter++)
   {
-    int encoded_reading=0;
-    for(int pin_iter=0;pin_iter<PINS_PER_ENCODER;pin_iter++)
-    {
-      int pin=ENCODER_PINS[encoder_iter][pin_iter];
-      if(pin==A6 || pin==A7) //not sure why Arduino Nano can't read these pins correctly with digitalRead, so read manually with analogRead and convert
-        val=analogRead(pin)>512;
-      else
-        val=digitalRead(pin)==HIGH;
-      encoded_reading |= val<<pin_iter;
-      //if(val) Serial.print("1");
-      //else Serial.print("0");
-    }
-    //if(encoder_iter==0) Serial.print(" ");
-    //else Serial.println();
-    int binary_reading=ENCODER_LOOKUP[encoded_reading];
-    for(int iter=7;iter>=1;iter--)
-      if(encoded_reading< (1<<iter) ) Serial.print("0");
-    Serial.print(encoded_reading,BIN);
-    Serial.print("\t");
-    Serial.print(binary_reading,DEC);
-    /*Serial.print("\t");
-    Serial.print(analogRead(A7),DEC);
-    Serial.print("\t");
-    Serial.print(analogRead(A5),DEC);
-    Serial.print("\t");
-    Serial.print(analogRead(A0),DEC);*/
-    Serial.println();
+    digitalWrite(LED_PINS[led_iter],led_state[led_iter]);
   }
+  for(int encoder_iter=0;encoder_iter<ENCODER_COUNT;encoder_iter++)
+  {
+    int binary_reading=get_encoder_sub_position(encoder_iter);
+    set_encoder_macro_position(encoder_iter,binary_reading);
+  }
+  for(int encoder_iter=0;encoder_iter<ENCODER_COUNT;encoder_iter++)
+  {
+    Serial.print(encoder_revolutions[encoder_iter]);
+    Serial.print(",");
+    Serial.print(encoder_last_position[encoder_iter]);
+    Serial.print(",");
+    Serial.print(encoder_bad_reading_counter[encoder_iter]);
+    Serial.print(",");
+  }
+  for(int led_iter=0;led_iter<LED_COUNT;led_iter++)
+  {
+    boolean this_led_state=led_state[led_iter];
+    Serial.print(this_led_state,DEC);
+    if(led_iter!=(LED_COUNT-1))
+      Serial.print(",");
+    else
+      Serial.println();
+  }
+}
+
+//clear the serial input buffer, store as text
+int input_led_index=0;
+void parse_serial_input()
+{
+  while(Serial.available())
+  {
+    char this_char=Serial.read();
+    switch(this_char){
+      case ',':
+        input_led_index+=1;
+        if(input_led_index>=LED_COUNT)
+          input_led_index=LED_COUNT-1;
+      break;
+      case '0':
+        led_state[input_led_index]=false;
+      break;
+      case '1':
+        led_state[input_led_index]=true;
+      break;
+      case '\n':
+        input_led_index=0;
+      break;
+      default:
+      //no action on invalid value (ignore it)
+      break;
+    }
+  }
+}
+
+//given an encoder index (0 to 1) and a reading (0 to 127)
+//parse it into local variables (what it means for the revolution counter)
+void set_encoder_macro_position(int encoder_index,int this_reading)
+{
+  int last_reading=encoder_last_position[encoder_index];
+  if(this_reading<0)
+  {
+    encoder_bad_reading_counter[encoder_index]=encoder_bad_reading_counter[encoder_index]+1;
+  }else{
+    int delta_reading=this_reading-last_reading;//change in sub-position of wheel
+    int delta_rotation=0;//change in the integer number of rotations of the wheel
+    if(delta_reading>ENCODER_MAX_VALUE/2)//jumped from 0 to 127
+      delta_rotation=-1;
+    else if(delta_reading<-ENCODER_MAX_VALUE/2)//jumped from 127 to 0
+      delta_rotation=1;
+    encoder_last_position[encoder_index]=this_reading;
+    encoder_revolutions[encoder_index]=encoder_revolutions[encoder_index]+delta_rotation;
+  }
+}
+
+//get just the 0-127 raw reading of the encoder
+//returns -1 on error in parsing
+int get_encoder_sub_position(int encoder_index)
+{
+  int encoded_reading=0;
+  int val=0;//single bit reading
+  for(int pin_iter=0;pin_iter<PINS_PER_ENCODER;pin_iter++)
+  {
+    int pin=ENCODER_PINS[encoder_index][pin_iter];
+    if(pin==A6 || pin==A7) //not sure why Arduino Nano can't read these pins correctly with digitalRead, so read manually with analogRead and convert
+      val=analogRead(pin)>512;
+    else
+      val=digitalRead(pin)==HIGH;
+    encoded_reading |= val<<pin_iter;
+  }
+  int binary_reading=ENCODER_LOOKUP[encoded_reading];
+  /* //debug printout
+  for(int iter=7;iter>=1;iter--)
+    if(encoded_reading< (1<<iter) ) Serial.print("0");
+  Serial.print(encoded_reading,BIN);//raw binary reading with leading zeros
+  Serial.print("\t");
+  Serial.print(binary_reading,DEC);//decoded reading
+  Serial.println();*/
+  return binary_reading;
 }
