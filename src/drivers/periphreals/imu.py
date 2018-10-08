@@ -15,6 +15,7 @@
 
 Purpose: 
 Queries magnetometer for heading
+IMU: MPU-9250
 
 Usage:
 print all i/o from rpi:

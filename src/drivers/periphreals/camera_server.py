@@ -1,3 +1,10 @@
+#important URLs:
+#http://192.168.1.113:8000/stream.mjpg
+#http://192.168.1.113:8000/prev_view.html
+#http://192.168.1.113:8000/next_view.html
+#http://192.168.1.113:8000/brighter.html
+#http://192.168.1.113:8000/dimmer.html
+
 # in virtual env, python qr.py
 # on browser, http://192.168.1.100:8000
 
@@ -67,7 +74,7 @@ PAGE_LESS="""\
 <head> <title>R2DAG Live Feed</title> </head>
 <body>
 <h1>R2DAG Live Feed</h1>
-<h2>LESS</h2>
+<h2>PLACEHOLDER</h2>
 </body>
 </html>
 """
