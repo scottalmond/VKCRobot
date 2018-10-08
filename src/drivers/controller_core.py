@@ -13,12 +13,12 @@ is_server=False
 this_conn=Connection(False,server_def["ip_address"],server_def["port"])
 
 print("Pause to form connection...")
-this_conn.connect()
+this_conn.start()
 while(not this_conn.is_connected()):
 	time.sleep(0.1)
 	
 print("Create GUI...")#make GUI...
-is_windowed=False
+is_windowed=True
 gui=GUI(is_windowed)
 	
 last_watchdog_time=0

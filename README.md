@@ -99,7 +99,12 @@ sudo apt-get install arduino
 
 --
 
+<<<<<<< HEAD
 camera:
 sudo pip3 install scipy
 sudo pip3 install imutils
 sudo pip3 install numpy --upgrade
+=======
+split screen mjpg
+omxplayer --win 0,0,400,480 -r --live 'http://192.168.1.113:8000/stream.mjpg'
+>>>>>>> a2133aa99f4ce3b819b0180798e85944471c625d
