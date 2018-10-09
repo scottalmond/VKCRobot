@@ -13,6 +13,7 @@
 //    LED 0 is ON (1), LED 1 is OFF (0), LED 2 is OFF (0), LED 3 is ON (1)
 
 //consts
+const boolean IS_DEBUG=false;//extra info in print statements
 const int ENCODER_COUNT=2;
 const int PINS_PER_ENCODER=8;
 const int LED_COUNT=4;
@@ -24,8 +25,8 @@ const int LED_COUNT=4;
 //encoder A pin 1 to S0 on mePed
 //encoder B pin 1 to A7 on mePed
 const int ENCODER_PINS[ENCODER_COUNT][PINS_PER_ENCODER]={
-  /*LSB*/{2,3,4,5,6,7,8,9},/*MSB*/
-  /*LSB*/{A7,A6,A5,A4,A3,A2,A1,A0}/*MSB*/
+  /*LSB*/{2,3,4,5,6,7,8,9}/*MSB*/
+  /*LSB*/,{A0,A1,A2,A3,A4,A5,A6,A7}/*MSB*/
 };
 const int ENCODER_CODE_LENGTH=256;//number of indexes in lookup table
 const int ENCODER_MAX_VALUE=127;//max value after decrypting
@@ -46,10 +47,10 @@ void setup()
     for(int pin_iter=0;pin_iter<PINS_PER_ENCODER;pin_iter++)
     {
       int pin=ENCODER_PINS[encoder_iter][pin_iter];
-      //if(pin==A7)
-      //  pinMode(pin,INPUT);
-      //else
-      pinMode(pin,INPUT_PULLUP);
+      if(pin==A6 || pin==A7)
+        pinMode(pin,INPUT);
+      else
+        pinMode(pin,INPUT_PULLUP);
     }
   }
   for(int led_iter=0;led_iter<LED_COUNT;led_iter++)
@@ -231,9 +232,8 @@ void loop()
     Serial.print(this_led_state,DEC);
     if(led_iter!=(LED_COUNT-1))
       Serial.print(",");
-    else
-      Serial.println();
   }
+  Serial.println();
 }
 
 //clear the serial input buffer, store as text
@@ -257,6 +257,9 @@ void parse_serial_input()
       break;
       case '\n':
         input_led_index=0;
+      break;
+      case 'p':
+        Serial.println("p");//simple hello world ping response
       break;
       default:
       //no action on invalid value (ignore it)
@@ -287,7 +290,7 @@ void set_encoder_macro_position(int encoder_index,int this_reading)
 
 //get just the 0-127 raw reading of the encoder
 //returns -1 on error in parsing
-int get_encoder_sub_position(int encoder_index)
+int get_raw_encoder_reading(int encoder_index)
 {
   int encoded_reading=0;
   int val=0;//single bit reading
@@ -300,7 +303,6 @@ int get_encoder_sub_position(int encoder_index)
       val=digitalRead(pin)==HIGH;
     encoded_reading |= val<<pin_iter;
   }
-  int binary_reading=ENCODER_LOOKUP[encoded_reading];
   /* //debug printout
   for(int iter=7;iter>=1;iter--)
     if(encoded_reading< (1<<iter) ) Serial.print("0");
@@ -308,5 +310,20 @@ int get_encoder_sub_position(int encoder_index)
   Serial.print("\t");
   Serial.print(binary_reading,DEC);//decoded reading
   Serial.println();*/
+  return encoded_reading;
+}
+
+//map raw reading to meaningful decimal
+int get_encoder_sub_position(int encoder_index)
+{
+  int encoded_reading=get_raw_encoder_reading(encoder_index);
+  if(IS_DEBUG)
+  {
+    for(int iter=7;iter>=1;iter--)
+      if(encoded_reading< (1<<iter) ) Serial.print("0");
+    Serial.print(encoded_reading,BIN);
+    Serial.print(" ");
+  }
+  int binary_reading=ENCODER_LOOKUP[encoded_reading];
   return binary_reading;
 }
