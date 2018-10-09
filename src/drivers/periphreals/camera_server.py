@@ -45,6 +45,7 @@ import socketserver
 from threading import Thread
 from threading import Condition
 from http import server
+import copy
 
 import cv2
 from picamera.array import PiRGBArray
@@ -238,6 +239,7 @@ class Detection:
 	
 	def __init__(self):
 		self.qrFound = []
+		self.qr_priority_queue=[]
 	
 	def getDimension(self, image):
 		
@@ -307,22 +309,45 @@ class Detection:
 			qrText = qr.data.decode("utf-8")
 
 			# draw the QR text in the frame
-			cv2.putText(image, qrText, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+			cv2.putText(image, qrText, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2)
 
 			# save (unique) QR text
-			if qrText not in self.qrFound:
-				self.qrFound.append(qrText)
+			#if qrText not in self.qrFound:
+			#	self.qrFound.append(qrText)
+			self.foundQr(qrText)
 						
 		#image = self.addQrTextToCorner(image)
 		return image
-
+		
+	#string, timestamp_seconds
+	def foundQr(self,qrText):
+		already_exists=False
+		for qr_line in self.qr_priority_queue:
+			if(qr_line["string"]==qrText):
+				already_exists=True
+				qr_line["time_seconds"]=time.time()
+				#qr_line["live"]=True #is in view for the current frame, may not be used...
+		if(not already_exists):
+			self.qr_priority_queue.append({"string":qrText,"time_seconds":time.time()})#,"live":True
+		
+	#get Qrs with most recently found on top (index 0)
+	def getQrList(self):
+		deletable_copy=copy.deepcopy(self.qr_priority_queue)
+		out_list=[]
+		while(len(deletable_copy)>0):
+			min_found=None
+			for qr_entry in deletable_copy:
+				if(min_found is None or qr_entry["time_seconds"]>min_found["time_seconds"]):
+					min_found=qr_entry
+			deletable_copy.remove(min_found)
+			out_list.append(min_found)
+		return out_list
 
 # Web Server
 class StreamingHandler(server.BaseHTTPRequestHandler):
 
 	def do_GET(self):
 		
-		global detection
 
 		if self.path == '/':
 			self.send_response(301)
@@ -377,6 +402,17 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 			self.send_header('Content-Length', len(content))
 			self.end_headers()
 			self.wfile.write(content)
+			
+		elif self.path =="/invert.html":
+
+			streamVideo.invert_colors=not streamVideo.invert_colors
+			content = PAGE_LESS.encode('utf-8')
+			self.send_response(200)
+			self.send_header('Content-Type', 'text/html')
+			self.send_header('Content-Length', len(content))
+			self.end_headers()
+			self.wfile.write(content)
+		
 			
 		elif self.path == '/stream.mjpg':
 			self.send_response(200)
@@ -479,6 +515,9 @@ class VideoStream:
 	def set_shutter_speed(self,value):
 		#150 to 1e6/fps
 		#logging.warning("C: "+str(value))
+		value=int(value)
+		#print("SHUTTER: ",value)
+		#print("SHUTTER: ",type(value))
 		self.camera.shutter_speed=value
 		
 	def get_shutter_speed(self):
@@ -609,14 +648,17 @@ class CameraManager(Thread):
 		Thread.__init__(self)
 		frames_per_second=10
 		global streamVideo
-		streamVideo = VideoStream((400*3,480*3),(400,480),frames_per_second).start()
+		upscale=2
+		streamVideo = VideoStream((int(400*upscale),int(480*upscale)),(400,480),frames_per_second).start()
 
 		streamVideo.setShowCvFlag(False)
 		streamVideo.setEdgeDetectionFlag(False)
 		#streamVideo.view_manager.changeView(False)#decrement backwards
 
 		time.sleep(2)
+		self.exposure_ui_setting=0#0 to 1 per user selection
 
+		global detection
 		detection = Detection()
 		
 		
@@ -639,15 +681,19 @@ class CameraManager(Thread):
 						self.command_set_exposure(True,0)
 					else:
 						self.command_set_exposure(False,command["value"])
+				elif(command["command"]=="invert"):
+					streamVideo.invert_colors=not streamVideo.invert_colors
 	
 	#bool is_auto exposure
 	#int value 0 to 1 for min to max exposure (may be parsed as logarithmic...)			
 	def command_set_exposure(self,is_auto,value):
-		print("CameraManager.command_set_exposure not implemented")
 		if(is_auto):
-			pass
+			streamVideo.set_shutter_speed(0)
+			self.exposure_ui_setting=0
 		else:
-			pass
+			log_value=np.interp(value,[0,0.25,0.5,0.75,1.0],[150,1e3,1e4,1e5,1e6])
+			streamVideo.set_shutter_speed(log_value)
+			self.exposure_ui_setting=value
 		
 	#change which view is presented to the user
 	def command_change_video_feed(self,is_increase):
@@ -656,7 +702,11 @@ class CameraManager(Thread):
 		
 	#qr codes found
 	def popStatus(self):
-		return {"status":"demo"}
+		return {"camera":{"qr_list":detection.getQrList(),
+						  "exposure":self.exposure_ui_setting,
+						  "is_invert":streamVideo.invert_colors},
+				"view":streamVideo.view_manager.curr_view.name
+				}
 	
 	def dispose(self):
 		pass

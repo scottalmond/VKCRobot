@@ -28,8 +28,11 @@ class Arduino:
 	#flush the buffer and return only the last line found
 	def getLastLine(self):
 		while(self.serial.inWaiting()):
-			this_char=str(self.serial.read(),'utf-8')
-			self.serial_queue+=this_char
+			try:
+				this_char=str(self.serial.read(),'utf-8')
+				self.serial_queue+=this_char
+			except UnicodeDecodeError:
+				self.serial_queue="" #flush queue on communication error
 		split_status=self.serial_queue.split('\n')
 		if(len(split_status)>1):
 			self.serial_queue=split_status[-1]
@@ -56,6 +59,11 @@ class Arduino:
 				  "leds":[val[7]==1,val[8]==1,val[9]==1,val[10]==1]}
 		return out_dict
 		
+	@staticmethod
+	def getDummyPacket():
+		cmd_string="0,0,0,0,0,0,0,0,0,0,0"
+		return cmd_string
+	
 	#list of four boolean values
 	def writeLED(self,leds):
 		string_out=bytes(self.__get_led_string(leds),'utf-8')
@@ -81,7 +89,7 @@ class Arduino:
 		string_expectation="1,1,0,0\n"
 		cmd_string=Arduino.__get_led_string(cmd_binary)
 		print("Format LED command: ",("PASS" if cmd_string==string_expectation else "FAIL"))#,", Expectation: ",string_expectation,", Reality: ",cmd_string)
-		cmd_string="99,1,2,3,4,5,6,1,1,0,0"
+		cmd_string=Arduino.getDummyPacket()#"99,1,2,3,4,5,6,1,1,0,0"
 		expectation_dict={"packet_id":99,"encoders":[{"rotation":1,"subposition":2,"errors":3},{"rotation":4,"subposition":5,"errors":6}],"leds":[True,True,False,False]}
 		cmd_dict=Arduino.parseLine(cmd_string)
 		print("Format status packet: ",("PASS" if (expectation_dict==cmd_dict) else "FAIL"))
