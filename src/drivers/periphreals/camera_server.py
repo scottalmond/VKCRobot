@@ -50,7 +50,7 @@ import cv2
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 from PIL import Image
-from pyzbar import pyzbar
+from pyzbar import pyzbar #10/13 temp fix, need to SUDO install pyzbar...
 
 import numpy as np
 import imutils
@@ -604,34 +604,66 @@ class ViewManager:
 		
 
 # main
-#class CameraServer(threading.Thread):
-#	def __init__(self):
-#		pass
+class CameraManager():#threading.Thread):
+	def __init__(self):
+		fixed_zbar=False
+		if(fixed_zbar):
+			frames_per_second=10
+			streamVideo = VideoStream((400*3,480*3),(400,480),frames_per_second).start()
+
+			streamVideo.setShowCvFlag(False)
+			streamVideo.setEdgeDetectionFlag(False)
+			#streamVideo.view_manager.changeView(False)#decrement backwards
+
+			time.sleep(2)
+
+			detection = Detection()
 		
-#	def run(self):
+		
+	def lock_thread(self):
+		# web streaming is on another thread
+		try:
+			address = ('192.168.1.113', 8000)
+			server = StreamingServer(address, StreamingHandler)
+			server.serve_forever()
+		finally:
+			streamVideo.stop()
+		
+	def update(self,command_list):
+		for command in command_list:
+			if(command["target"]=="VIEW"):
+				self.command_change_video_feed(command["is_inc"])
+			elif(command["target"]=="CAMERA"):
+				if(command["command"]=="exposure"):
+					if(command["value"]=="auto"):
+						self.command_set_exposure(True,0)
+					else:
+						self.command_set_exposure(False,command["value"])
+	
+	#bool is_auto exposure
+	#int value 0 to 1 for min to max exposure (may be parsed as logarithmic...)			
+	def command_set_exposure(self,is_auto,value):
+		print("CameraManager.command_set_exposure not implemented")
+		
+	#change which view is presented to the user
+	def command_change_video_feed(self,is_increase):
+		print("CameraManager.command_change_video_feed not implemented")
+		
+	#qr codes found
+	def popStatus(self):
+		return {"status":"demo"}
+	
+	def dispose(self):
+		pass
 		
 
-frames_per_second=10
-streamVideo = VideoStream((400*3,480*3),(400,480),frames_per_second).start()
 
-streamVideo.setShowCvFlag(False)
-streamVideo.setEdgeDetectionFlag(False)
-#streamVideo.view_manager.changeView(False)#decrement backwards
-
-time.sleep(2)
-
-detection = Detection()
-
-# web streaming is on another thread
-try:
-	address = ('192.168.1.113', 8000)
-	server = StreamingServer(address, StreamingHandler)
-	server.serve_forever()
-finally:
-	streamVideo.stop()
 
 if __name__ == "__main__":
 	
 	print("START")
+	
+	camera_manager=CameraManager()
 		
 	print("DONE")
+

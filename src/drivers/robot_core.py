@@ -1,14 +1,21 @@
-#quit()
+#CONOPS:
+# cycle through all sensors very fast ~200-300 Hz ideally
+# for PWM/Lidar/IMU, pull commands from a task list for the PWM/Lidar
+#   so standard operation is to have a back-and-forth auto-populating scan queue except when
+#   user command depth map, at which point standad queue is flushed, map queue is populated.
+#   following completion of map queue, revert back to standard sweepa
+#also, note to self: check eather: implement GPS if forecast is sunny b/c will be outdoor competition
 
-#create socket server, wait for connection
-#receive commands
-#transmit state
-#shutdown if no command for too long (watchdog)
+#rc-local exception:
+# ImportError: No module named 'pyzbar'
+# /src/drivers/periphreals/camera_server.py
+import os
+os.system("cd /home/pi/Documents/VKCRobot/src/drivers")
 
 from connection import Connection,SERVER_DEFINITION
-from periphreals.pwm import PWM
-from periphreals.discrete import Discrete
-from periphreals.camera import Camera
+#from periphreals.camera import Camera
+from periphreals.camera_server import CameraManager
+from contention_manager import ContentionManager
 import time
 import numpy as np
 
@@ -18,108 +25,47 @@ server_def=SERVER_DEFINITION.ROBOT.value
 is_server=True
 this_conn=Connection(is_server,server_def["ip_address"],server_def["port"])
 
+iteration_counter=0
+
 print("Pause to form connection...")
-this_conn.start() #NOT blocking, exectuion will continue past here even if link is not established
+this_conn.start() #NOT blocking, execution will continue past here even if link is not established
 while(not this_conn.is_connected()):
 	time.sleep(0.1) #wait for opposite end of connection to appear
+	print("RobotCore waiting to form connection: ",iteration_counter)
 
 print("Connection formed")
 
-print("Create camera")
-cam=Camera()
+print("Init Contention Manager...")
+contention_manager=ContentionManager()
 
-print("Connect Servos...")
-pwm=PWM()
+print("Init Camera Server...")
+camera_server=CameraManager()
 
-print("Connect Discrete...")
-discrete=Discrete()
-
-wheel_list=[Discrete.FRONT_LEFT,Discrete.REAR_LEFT,Discrete.FRONT_RIGHT,Discrete.REAR_RIGHT]
-dimmer_list={#speed control of wheels
-			 Discrete.FRONT_LEFT:8,
-			 Discrete.REAR_LEFT:9,
-			 Discrete.FRONT_RIGHT:10,
-			 Discrete.REAR_RIGHT:11
-			 }
-
-last_state_send_time=0
-last_wheel_command_received_time=time.time()
-MIN_STATE_DELAY_SECONDS=0.1 #only send state updates so frequently
-MAX_AUTONOMUS_SECONDS=3 #how long robot will continue to move before self-terminating
-
-wheel_state={Discrete.FRONT_LEFT:0,Discrete.REAR_LEFT:0,Discrete.FRONT_RIGHT:0,Discrete.REAR_RIGHT:0}
-#		   0   1   2   3   4   5   6   7
-pwm_min=[ 90,-20,-90, 22,  0,-90,  0, 20]
-pwm_max=[205,200,210, 62,120,360,110,150]
-pwm_state=[]
-for index in range(len(pwm_max)):
-	pwm_state.append((pwm_max[index]+pwm_min[index])/2)
-	angle_degrees=pwm_state[index]
-	pwm.set_servo(index,angle_degrees)
-
-#TODO set servo state !!!!!!!!!!!!!!!!!!!
-
-state_count=0
-cam_pic_count=0
-
-print("Start state loop...")
+print("Start state loop...");
 
 while(True):
+	time.sleep(0.1)
+	print("RobotCore iteration: ",iteration_counter)
+	iteration_counter+=1
+	
+	command_list=[]
+	
 	while(not this_conn.is_inbound_queue_empty()):
 		command=this_conn.pop()
 		if(command["target"]=="WATCHDOG"):
-			#print("COMMAND: Watchdog")
 			pass
-		if(command["target"]=="WHEELS"):
-			print(command)
-			print("WHEELS HERE")
-			last_wheel_command_received_time=time.time()
-			#print("Wheel command ",Discrete.FRONT_LEFT,": ",command[Discrete.FRONT_LEFT])
-			#print("Wheel command ",Discrete.FRONT_RIGHT,": ",command[Discrete.FRONT_RIGHT])
-			#wheel_state[Discrete.FRONT_LEFT]=command[Discrete.FRONT_LEFT]
-			for wheel_name in wheel_list:
-				wheel_state[wheel_name]=command[wheel_name]
-				discrete.setState(wheel_name,wheel_state[wheel_name])
-				dimmer_channel=dimmer_list[wheel_name]
-				dim_level=abs(wheel_state[wheel_name])
-				pwm.set_dimmer(dimmer_channel,dim_level)
-		elif(command["target"]=="PWM"):
-			print(command)
-			#reset (to center)
-			channel_index=command["index"]
-			pwm_scope=command["scope"]
-			if(pwm_scope=="reset"):
-				pwm_state[channel_index]=(pwm_max[channel_index]+pwm_min[channel_index])/2
-				pwm.set_servo(channel_index,pwm_state[channel_index])
-			elif(pwm_scope=="delta"):
-				delta=command["value"]
-				#print(pwm_state[channel_index],"+",delta,"=",pwm_state[channel_index]+delta)
-				#print(pwm_min[channel_index],"<",pwm_state[channel_index]+delta
-				pwm_state[channel_index]=np.clip(pwm_state[channel_index]+delta,pwm_min[channel_index],pwm_max[channel_index])
-				pwm.set_servo(channel_index,pwm_state[channel_index])
-			#skipping data sanitation for brevity...
-			#delta (subject to limits)
-			print("PWM HERE")
-		elif(command["target"]=="CAMERA"):
-			print("CAM HERE")
-			cam.snapshot()
-			cam_pic_count+=1
-	is_recently_sent_state=(time.time()-last_state_send_time)<MIN_STATE_DELAY_SECONDS
-	if(not is_recently_sent_state):#if been a while since last state sent, then send one
-		state={"target":"state","counter":state_count,"wheels":wheel_state,"pwm":pwm_state,"camera":cam_pic_count}
-		state_count+=1
-		this_conn.send(state)
-		last_state_send_time=time.time()
-	if((time.time()-last_wheel_command_received_time)>MAX_AUTONOMUS_SECONDS):
-		#watchdog execution, stop wheels
-		for wheel_name in wheel_list:
-			wheel_state[wheel_name]=0
-			discrete.setState(wheel_name,wheel_state[wheel_name])
-			dimmer_channel=dimmer_list[wheel_name]
-			dim_level=abs(wheel_state[wheel_name])
-			pwm.set_dimmer(dimmer_channel,0)
+		else:
+			command_list.append(command)
+			print("RobotCore command: ",command)
 		
-pwm.dispose()
 	
-print("DONE")
+	contention_manager.update(command_list)
+	camera_server.update(command_list)
 	
+	status_packet_contention=contention_manager.popStatus()
+	status_packet_camera=camera_server.popStatus()
+	
+	
+
+contention_manager.dispose()
+camera_server.dipose()

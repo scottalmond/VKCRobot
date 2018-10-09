@@ -59,7 +59,7 @@ class Arduino:
 			
 		
 	@staticmethod
-	def build_test():
+	def build_test(is_infinite_loop=False):
 		print("Arduino build test")
 		print("format command to turn on LEDs 0 and 1")
 		cmd_binary=[True,True,False,False]
@@ -72,10 +72,12 @@ class Arduino:
 		print("Format status packet: ",("PASS" if (expectation_dict==cmd_dict) else "FAIL"))
 		
 		arduino=Arduino()
-		for rep in range(30):
+		rep=-1 if is_infinite_loop else 30
+		while((rep<=-1 and is_infinite_loop) or rep>=0):
 			print(Arduino.__parseLine(arduino.getLine()))
+			rep-=1
 
 if __name__ == "__main__":
 	print("START")
-	Arduino.build_test()
+	Arduino.build_test(True)
 	print("DONE")

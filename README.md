@@ -108,3 +108,11 @@ sudo pip3 install numpy --upgrade
 split screen mjpg
 omxplayer --win 0,0,400,480 -r --live 'http://192.168.1.113:8000/stream.mjpg'
 >>>>>>> a2133aa99f4ce3b819b0180798e85944471c625d
+
+--
+
+edited rc.local 
+because of issues with libraries not appearing when running scripts (because rc.local is root, but libraries liek openCV and pyzlib are under local account)
+choose to run root script as local account:
+sudo su pi -c 'python3 /home/pi/Documents/VKCRobot/src/drivers/robot_core.py &'
+
