@@ -644,10 +644,15 @@ class CameraManager(Thread):
 	#int value 0 to 1 for min to max exposure (may be parsed as logarithmic...)			
 	def command_set_exposure(self,is_auto,value):
 		print("CameraManager.command_set_exposure not implemented")
+		if(is_auto):
+			pass
+		else:
+			pass
 		
 	#change which view is presented to the user
 	def command_change_video_feed(self,is_increase):
-		print("CameraManager.command_change_video_feed not implemented")
+		#print("CameraManager.command_change_video_feed not implemented")
+		streamVideo.view_manager.changeView(is_increase)
 		
 	#qr codes found
 	def popStatus(self):

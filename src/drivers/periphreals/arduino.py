@@ -58,7 +58,7 @@ class Arduino:
 		
 	#list of four boolean values
 	def writeLED(self,leds):
-		string_out=self.__get_led_string(leds)
+		string_out=bytes(self.__get_led_string(leds),'utf-8')
 		self.serial.write(string_out)
 	
 	#take outgoing status RPi -> Arduino and convert to string

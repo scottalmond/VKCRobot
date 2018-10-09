@@ -27,6 +27,10 @@ this_conn=Connection(is_server,server_def["ip_address"],server_def["port"])
 
 iteration_counter=0
 
+print("Init Camera Server...")
+camera_server=CameraManager()
+camera_server.start()
+
 print("Pause to form connection...")
 this_conn.start() #NOT blocking, execution will continue past here even if link is not established
 while(not this_conn.is_connected()):
@@ -38,14 +42,9 @@ print("Connection formed")
 print("Init Contention Manager...")
 contention_manager=ContentionManager()
 
-print("Init Camera Server...")
-camera_server=CameraManager()
-camera_server.start()
-
 print("Start state loop...");
-
 while(True):
-	time.sleep(0.1)
+	time.sleep(0.1)#optional throttle
 	print("RobotCore iteration: ",iteration_counter)
 	iteration_counter+=1
 	
@@ -63,8 +62,8 @@ while(True):
 	contention_manager.update(command_list)
 	camera_server.update(command_list)
 	
-	status_packet_contention=contention_manager.popStatus() #wheel status, pwm status
-	status_packet_camera=camera_server.popStatus() #led state, exposure
+	status_packet_contention=contention_manager.popStatus() #wheel state, pwm state, is looping pwm, pwm queue length, is homing
+	status_packet_camera=camera_server.popStatus() #led state, exposure, qr codes
 	#packet id
 	
 
