@@ -39,6 +39,8 @@ int encoder_bad_reading_counter[ENCODER_COUNT]{0,0};
 const int LED_PINS[LED_COUNT]={10,11,12,13};
 boolean led_state[LED_COUNT]={false,false,false,false};
 
+long packet_counter=0;
+
 void setup()
 {
   //init pins with ~20k ohm pull-ups
@@ -206,7 +208,7 @@ void setup()
 
 void loop()
 {
-  delay(50); //20 ms delay = ~30% load on RPi, 50 ms of delay = ~15% load on RPi
+  delay(20); //20 ms delay = ~30% load on RPi, 50 ms of delay = ~15% load on RPi
   parse_serial_input();//accept led input as a string: "0,1,1,0\n1,1,0,0\n" etc
   for(int led_iter=0;led_iter<LED_COUNT;led_iter++)
   {
@@ -217,6 +219,9 @@ void loop()
     int binary_reading=get_encoder_sub_position(encoder_iter);
     set_encoder_macro_position(encoder_iter,binary_reading);
   }
+  Serial.print(packet_counter,DEC);
+  Serial.print(",");
+  packet_counter++;
   for(int encoder_iter=0;encoder_iter<ENCODER_COUNT;encoder_iter++)
   {
     Serial.print(encoder_revolutions[encoder_iter]);

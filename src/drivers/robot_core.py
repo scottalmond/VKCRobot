@@ -40,6 +40,7 @@ contention_manager=ContentionManager()
 
 print("Init Camera Server...")
 camera_server=CameraManager()
+camera_server.start()
 
 print("Start state loop...");
 
@@ -62,9 +63,9 @@ while(True):
 	contention_manager.update(command_list)
 	camera_server.update(command_list)
 	
-	status_packet_contention=contention_manager.popStatus()
-	status_packet_camera=camera_server.popStatus()
-	
+	status_packet_contention=contention_manager.popStatus() #wheel status, pwm status
+	status_packet_camera=camera_server.popStatus() #led state, exposure
+	#packet id
 	
 
 contention_manager.dispose()

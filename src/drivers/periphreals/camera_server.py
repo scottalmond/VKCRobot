@@ -604,23 +604,23 @@ class ViewManager:
 		
 
 # main
-class CameraManager():#threading.Thread):
+class CameraManager(Thread):
 	def __init__(self):
-		fixed_zbar=False
-		if(fixed_zbar):
-			frames_per_second=10
-			streamVideo = VideoStream((400*3,480*3),(400,480),frames_per_second).start()
+		Thread.__init__(self)
+		frames_per_second=10
+		global streamVideo
+		streamVideo = VideoStream((400*3,480*3),(400,480),frames_per_second).start()
 
-			streamVideo.setShowCvFlag(False)
-			streamVideo.setEdgeDetectionFlag(False)
-			#streamVideo.view_manager.changeView(False)#decrement backwards
+		streamVideo.setShowCvFlag(False)
+		streamVideo.setEdgeDetectionFlag(False)
+		#streamVideo.view_manager.changeView(False)#decrement backwards
 
-			time.sleep(2)
+		time.sleep(2)
 
-			detection = Detection()
+		detection = Detection()
 		
 		
-	def lock_thread(self):
+	def run(self):
 		# web streaming is on another thread
 		try:
 			address = ('192.168.1.113', 8000)
@@ -664,6 +664,7 @@ if __name__ == "__main__":
 	print("START")
 	
 	camera_manager=CameraManager()
+	camera_manager.start()
 		
 	print("DONE")
 
