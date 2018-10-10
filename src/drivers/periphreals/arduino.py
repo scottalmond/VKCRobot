@@ -37,6 +37,7 @@ class Arduino:
 		if(len(split_status)>1):
 			self.serial_queue=split_status[-1]
 			return split_status[-2]
+		return None
 		
 		
 	#take incoming string Arduino -> RPi and convert to dictionary

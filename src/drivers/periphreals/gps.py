@@ -41,6 +41,7 @@ class GPS:
 		import serial
 		self.serial=serial
 		self.file_descriptor=self.initInterface()
+		self.serial_queue="" #string holding the latest partial data line
 		
 	def initInterface(self):
 		#wpi=self.wpi
@@ -52,6 +53,18 @@ class GPS:
 		#self.wpi.serialClose(self.file_descriptor)
 		pass
 		
+	def getLastLine(self):
+		while(self.file_descriptor.inWaiting()):
+			try:
+				this_char=str(self.file_descriptor.read(),'utf-8')
+				self.serial_queue+=this_char
+			except UnicodeDecodeError:
+				self.serial_queue="" #flush queue on communication error
+		split_status=self.serial_queue.split('\n')
+		if(len(split_status)>1):
+			self.serial_queue=split_status[-1]
+			return split_status[-2]
+		
 	#given a string line, determine the type
 	#if of the form $GPRMC http://aprs.gids.nl/nmea/
 	#then ensure checksum is correct
@@ -62,9 +75,23 @@ class GPS:
 	#return None on Error
 	@staticmethod
 	def parsePositionFix(line):
-		latitude=-91
-		longitude=-181
-		if(len(line.strip())<=0): return None,None
+		latitude=-92
+		longitude=-182
+		if(len(line.strip())<=0): return latitude,longitude
+		try:
+			split=line.split(",")
+			if(not split[0]=="$GPRMC"):
+				return latitude,longitude
+			latitude=float(split[3])
+			longitude=float(split[5])
+			latitude=(latitude%100)*100/60+int(latitude/100)*100
+			longitude=(longitude%100)*100/60+int(longitude/100)*100
+			latitude/=100
+			longitude/=100
+			if(split[4]=='S'): latitude=-latitude
+			if(split[6]=='W'): longitude=-longitude
+		except:
+			return latitude,longitude
 		#TODO
 		#look online: there may already be a python library out there that parses these data lines, if not:
 		#break string by commas
@@ -118,9 +145,23 @@ class GPS:
 				print("Live GPS Fix Sentence: FAIL")
 				print("Latitude, Longitude fix: FAIL")
 				print("Visualization: FAIL")
+				
+	@staticmethod
+	def build_test2():
+		import time
+		gps=GPS()
+		while(True):
+			line=gps.getLastLine()
+			if(not line is None):
+				latitude,longitude=gps.parsePositionFix(line)
+				if(latitude>-91):
+					#print(line)
+					print("Lat: ",latitude,", Lon: ",longitude)
+			time.sleep(0.001)
 		
 if __name__ == "__main__":
 	print("START")
 	is_loopback=False #is UART configured with TX connected to RX?
-	GPS.build_test(is_loopback)
+	#GPS.build_test(is_loopback)
+	GPS.build_test2()
 	print("DONE")

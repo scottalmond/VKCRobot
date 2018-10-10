@@ -20,6 +20,18 @@ class MapManager:
 		self.push_field_map_image()
 		self.push_depth_map_image()
 		self.clean_depth_list()
+		timestamp=int(time.time())
+		path='/home/pi/Documents/log/'+str(timestamp)
+		self.log_gps=open(path+"_gps.csv","a")
+		self.log_gps.write("time_seconds,latitude,longitude\n")
+		self.log_imu=open(path+"_imu.csv","a")
+		self.log_imu.write("time_seconds,x_uT,y_uT,z_uT\n")
+		self.log_encoder=open(path+"_encoder.csv","a")
+		self.log_encoder.write("time_seconds,encoder_left,encoder_right\n")
+		self.log_wheel=open(path+"_wheel.csv","a")
+		self.log_wheel.write("time_seconds,front-left,rear-left,front-right,rear-right\n")
+		self.log_lidar=open(path+"_lidar.csv","a")
+		self.log_lidar.write("time_seconds,pan_degrees,tilt_degrees,distance_cm,index,is_map\n")
 		
 	def get_template_image(self,text):
 		width=400
@@ -32,29 +44,41 @@ class MapManager:
 		return blank_image
 		
 	def append_gps_reading(self,latitude,longitude):
-		pass
+		line=str(time.time())+","+str(latitude)+","+str(longitude)+"\n"
+		self.log_gps.write(line)
 		
+	#value is [x,y,z]
 	def append_magnetic_reading(self,value):
-		pass
+		line=str(time.time())+","+str(value[0])+","+str(value[1])+","+str(value[2])+"\n"
+		self.log_imu.write(line)
 		
 	def get_last_magnetic_heading(self):
 		pass
 		
 	#reference Arduino.py for arduino_dict structure
 	def append_encoder_reading(self,arduino_dict):
-		pass
-		
+		line=str(time.time())+","+str(arduino_dict["encoder_left" ]["rotation"]+arduino_dict["encoder_left" ]["subposition"]/128.0)+","+ \
+							      str(arduino_dict["encoder_right"]["rotation"]+arduino_dict["encoder_right"]["subposition"]/128.0)+"\n"
+		self.log_encoder.write(line)
+							      
 	def get_last_encoder_reading(self):
 		pass
 
+	def append_wheel_control(self,command):
+		line=str(time.time())+","+str(command["front-left"])+","+ \
+								  str(command["rear-left"])+","+ \
+								  str(command["front-right"])+","+ \
+								  str(command["rear-right"])+"\n"
+		self.log_wheel.write(line)
+	
 	#is_field_scan=True when sweeping left-right only
 	#False is pat+tilt to build up 3d depth map
 	def append_lidar_reading(self,pan_angle_degrees,tilt_angle_degrees,distance_cm,is_depth_map,index):
 		#if last reading was depth map and this one isn't, build depth map image
 		if(is_depth_map):
 			self.depth_list.append({"pan":pan_angle_degrees,"tilt":tilt_angle_degrees,"distance":distance_cm})
-		else:
-			pass
+		line=str(time.time())+","+str(pan_angle_degrees)+","+str(tilt_angle_degrees)+","+str(distance_cm)+","+str(index)+","+str(is_depth_map)+"\n"
+		self.log_lidar.write(line)
 		
 	#if it's stale then will need to get a new one
 	def is_field_map_stale(self):

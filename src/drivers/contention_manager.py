@@ -25,8 +25,8 @@ class ContentionManager:
 	ARM_PWM_CHANNELS=[0,1,2,3,4,5] #user-controlled channels
 	ARM_DELAY_BETWEEN_SWEEP_STATES_SECONDS=0.5 #wait X seconds between each sweep command to allow arm to physcially move to commanded position
 	LIDAR_PWM_CHANNELS={"pan":6,"tilt":7} #pan, tilt
-	PWM_LIMITS={"minimum":[  0,  0,  0,  0,  0,  0,  0,  0],#angular range of servos before hitting something
-				"maximum":[180,180,180,180,180,180,180,180]}
+	PWM_LIMITS={"minimum":[100,200,140,  0,  0,  0,  0,  0],#angular range of servos before hitting something
+				"maximum":[-20,100,  0,180,180,180,180,180]}
 	WHEEL_CIRCUMFERNECE_INCH=15
 	
 	def __init__(self,camera_server):
@@ -142,7 +142,7 @@ class ContentionManager:
 		self.pwm.set_servo(self.LIDAR_PWM_CHANNELS["tilt"],next_setting["tilt"])
 		lidar_depth_cm=self.lidar.simple_measure()
 		self.map_manager.append_lidar_reading(next_setting["pan"],next_setting["tilt"],lidar_depth_cm,next_setting["is_depth_map"],next_setting["index"])
-		if(next_setting["is_depth_map"] and (len(self.pwm_lidar_schedule)<=0 or len(self.pwm_lidar_schedule)%700==0)):
+		if(next_setting["is_depth_map"] and (len(self.pwm_lidar_schedule)<=0 or len(self.pwm_lidar_schedule)%1500==0)):
 			self.map_manager.get_depth_map_image() #flush new image to video stream pipeline
 			self.map_manager.push_depth_map_image()
 			
@@ -167,7 +167,7 @@ class ContentionManager:
 	#go to next wheel state, if one is available
 	def auto_wheel_hook(self):
 		pass
-		
+
 	#user command, will flush any internal auto-queue (go home)
 	# dict keys (string): Discrete.FRONT_LEFT,Discrete.REAR_LEFT,Discrete.FRONT_RIGHT,Discrete.REAR_RIGHT
 	# with values -1.0 to 1.0
@@ -185,6 +185,7 @@ class ContentionManager:
 			dimmer_channel=self.WHEEL_PWM_CHANNELS[wheel_name]
 			dim_level=abs(self.wheel_state[wheel_name])
 			self.pwm.set_dimmer(dimmer_channel,dim_level)
+		self.map_manager.append_wheel_control(command)
 		
 	def command_wheel_stop(self):
 		self.command_wheel_state({Discrete.FRONT_LEFT:0,Discrete.REAR_LEFT:0,Discrete.FRONT_RIGHT:0,Discrete.REAR_RIGHT:0})
@@ -251,9 +252,15 @@ class ContentionManager:
 			self.map_manager.append_encoder_reading(arduino_next_packet)
 			
 		#imu
-		
+		heading=self.imu.getHeading()
+		self.map_manager.append_magnetic_reading(heading)
 		
 		#gps
+		gps_line=self.gps.getLastLine()
+		if(not gps_line is None):
+			latitude,longitude=self.gps.parsePositionFix(gps_line)
+			if(latitude>-91):
+				self.map_manager.append_gps_reading(latitude,longitude)
 		
 	def map_hook(self):
 		#make 2d and 3d map images at a slow rate (5 seconds?), pass to camera_sever
