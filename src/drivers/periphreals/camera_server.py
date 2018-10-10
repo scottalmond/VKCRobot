@@ -456,7 +456,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 						#logging.warning("B: "+str(view_selection))
 						
 						image=streamVideo.view_manager.peek(view_selection)
-						time.sleep(0.04)#rate limit FPS
+						time.sleep(0.1)#rate limit FPS
 						
 					#if acquired image exists, show to user
 					if(not image is None):
@@ -624,6 +624,8 @@ class ViewManager:
 	def push(self,view_target,image):
 		if(image is None):
 			return
+		if(type(view_target)==type(1)):
+			view_target=VIEW_TYPE(view_target)
 		self.queues[view_target].put(image)
 		
 	#returns image for the given view
@@ -650,7 +652,9 @@ class CameraManager(Thread):
 		global streamVideo
 		upscale=2
 		streamVideo = VideoStream((int(400*upscale),int(480*upscale)),(400,480),frames_per_second).start()
-
+		
+		self.view_manager=streamVideo.view_manager
+		
 		streamVideo.setShowCvFlag(False)
 		streamVideo.setEdgeDetectionFlag(False)
 		#streamVideo.view_manager.changeView(False)#decrement backwards

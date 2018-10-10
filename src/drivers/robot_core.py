@@ -43,7 +43,7 @@ while(not this_conn.is_connected()):
 print("Connection formed")
 
 print("Init Contention Manager...")
-contention_manager=ContentionManager()
+contention_manager=ContentionManager(camera_server)
 
 print("Start state loop...");
 state_count=0

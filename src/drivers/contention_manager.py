@@ -29,7 +29,7 @@ class ContentionManager:
 				"maximum":[180,180,180,180,180,180,180,180]}
 	WHEEL_CIRCUMFERNECE_INCH=15
 	
-	def __init__(self):
+	def __init__(self,camera_server):
 		self.pwm_state_ratio=[0,0,0,0,0,0,0,0]#channels 0 to 7, where 0 to 5 are user controlled (arm) and last two are tasked (pan-tilt lidar)
 		self.pwm_queue=[]
 		self.pwm_queue_state={"is_looping":False,"last_state_command_seconds":time.time(),"last_state_index":0}
@@ -38,7 +38,7 @@ class ContentionManager:
 		self.encoder_state=None
 		self.pwm_lidar_schedule=[]
 		self.arduino_state=Arduino.parseLine(Arduino.getDummyPacket())
-		self.is_static_lidar=False #True if user want lidar to point to the side out of the way
+		self.is_lidar_static=False #True if user want lidar to point to the side out of the way
 		
 		self.discrete=Discrete()
 		self.pwm=PWM()
@@ -46,7 +46,7 @@ class ContentionManager:
 		self.lidar=Lidar()
 		self.arduino=Arduino()
 		self.gps=GPS()
-		self.map_manager=MapManager()
+		self.map_manager=MapManager(camera_server)
 		
 		self.command_wheel_state({Discrete.FRONT_LEFT:0,Discrete.REAR_LEFT:0,Discrete.FRONT_RIGHT:0,Discrete.REAR_RIGHT:0})
 		self.command_pwm_home()
@@ -64,14 +64,14 @@ class ContentionManager:
 				elif(command["command"]=="home"): self.command_pwm_home()
 				elif(command["command"]=="set"):
 					self.command_pwm_set(command["index"],command["value"])
-				elif(command["command"]=="static"):
-					self.pwm_is_static=not self.pwm_is_static
 			if(command["target"]=="CAMERA"):
 				if(command["command"]=="leds"):
 					self.command_led_state(command["value"])
 			if(command["target"]=="LIDAR"):
 				if(command["command"]=="depth_map"):
 					self.populate_depth_map_schedule()
+				elif(command["command"]=="static"):
+					self.is_lidar_static=not self.is_lidar_static
 		#sensor input
 		self.sensor_hook() #read imu/gps, update robot/obstacle state
 		self.map_hook()# generate field/depth maps, but do it quickly...
@@ -86,11 +86,12 @@ class ContentionManager:
 						  "homing_state":self.wheel_homing_state},
 				"pwm":{"is_looping":self.pwm_queue_state["is_looping"],
 					   "loop_state_count":len(self.pwm_queue_state),
-					   "is_static":self.pwm_is_static, #staring at a fixed pint off to the side
 					   "state":self.pwm_state_ratio#ui_commanded state echo back to controller
 					   },
-				"leds":self.arduino_state["leds"],
-				"is_depth_map":(not len(self.pwm_lidar_schedule)==0 and self.pwm_lidar_schedule[0]["is_depth_map"])#is building depth map
+				"lidar":{"is_lidar_static":self.is_lidar_static,
+						 "is_depth_map":(not len(self.pwm_lidar_schedule)==0 and self.pwm_lidar_schedule[0]["is_depth_map"])#is building depth map
+						 },
+				"leds":self.arduino_state["leds"]				
 				}
 		
 	def dispose(self):
@@ -99,10 +100,10 @@ class ContentionManager:
 	#create pre-scheduled tasks on pan-tilt servos and read lidar distance
 	# if no tasks in queue, schedule side-side motion
 	def auto_lidar_pwm_scheduler(self):
-		if(self.is_static_lidar):
+		if(self.is_lidar_static):
 			pan_degrees=self.map_manager.ANGLE_DEFINITION["pan"]["minimum"]
 			tilt_degrees=self.map_manager.ANGLE_DEFINITION["tilt"]["sweep"]
-			self.pwm_lidar_schedule=[{"pan":pan_degrees,"tilt":tilt_degrees,"is_depth_map":False}]
+			self.pwm_lidar_schedule=[{"pan":pan_degrees,"tilt":tilt_degrees,"is_depth_map":False,"index":0}]
 		elif(len(self.pwm_lidar_schedule)<=0):
 			self.pwm_lidar_schedule=[]
 			pan_min=self.map_manager.ANGLE_DEFINITION["pan"]["minimum"]
@@ -110,27 +111,27 @@ class ContentionManager:
 			pan_step=self.map_manager.ANGLE_DEFINITION["pan"]["step_sweep"]
 			pan_list=np.arange(pan_min,pan_max,pan_step)
 			tilt_degrees=self.map_manager.ANGLE_DEFINITION["tilt"]["sweep"]
+			index=0
 			for is_reverse in [False,True]:
 				flipped_list=pan_list[::-1] if is_reverse else pan_list
 				for pan_degrees in flipped_list:
-					self.pwm_lidar_schedule.append({"pan":pan_degrees,"tilt":tilt_degrees,"is_depth_map":False})
+					self.pwm_lidar_schedule.append({"pan":pan_degrees,"tilt":tilt_degrees,"is_depth_map":False,"index":index})
+					index+=1
 		
 	def populate_depth_map_schedule(self):
+		self.is_lidar_static=False
 		self.pwm_lidar_schedule=[]#flush previous queue
-		pan_min=self.map_manager.ANGLE_DEFINITION["pan"]["minimum"]
-		pan_max=self.map_manager.ANGLE_DEFINITION["pan"]["maximum"]
-		pan_step=self.map_manager.ANGLE_DEFINITION["pan"]["step_depth"]
-		tilt_min=self.map_manager.ANGLE_DEFINITION["tilt"]["minimum"]
-		tilt_max=self.map_manager.ANGLE_DEFINITION["tilt"]["maximum"]
-		tilt_step=self.map_manager.ANGLE_DEFINITION["tilt"]["step_depth"]
-		pan_list=[pan_min:pan_max:pan_step]
-		tilt_list=[tilt_min:tilt_max:tilt_step]
+		pan_list=self.map_manager.get_depth_list(True)
+		tilt_list=self.map_manager.get_depth_list(False)
 		is_flipped=False
+		index=0
 		for pan_degrees in pan_list:
 			flipped_list=tilt_list[::-1] if is_flipped else tilt_list
 			is_flipped=not is_flipped
 			for tilt_degrees in flipped_list:
-				self.pwm_lidar_schedule.append({"pan":pan_degrees,"tilt":tilt_degrees,"is_depth_map":True})
+				self.pwm_lidar_schedule.append({"pan":pan_degrees,"tilt":tilt_degrees,"is_depth_map":True,"index":index})
+				index+=1
+		self.map_manager.clean_depth_list()#clear stored data
 		
 		
 	#execute queued tasks from scheduler for lidar sweep/map
@@ -140,7 +141,11 @@ class ContentionManager:
 		self.pwm.set_servo(self.LIDAR_PWM_CHANNELS["pan"],next_setting["pan"])
 		self.pwm.set_servo(self.LIDAR_PWM_CHANNELS["tilt"],next_setting["tilt"])
 		lidar_depth_cm=self.lidar.simple_measure()
-		self.map_manager.append_lidar_reading(next_setting["pan"],next_setting["tilt"],lidar_depth_cm,next_setting["is_depth_map"])
+		self.map_manager.append_lidar_reading(next_setting["pan"],next_setting["tilt"],lidar_depth_cm,next_setting["is_depth_map"],next_setting["index"])
+		if(next_setting["is_depth_map"] and (len(self.pwm_lidar_schedule)<=0 or len(self.pwm_lidar_schedule)%700==0)):
+			self.map_manager.get_depth_map_image() #flush new image to video stream pipeline
+			self.map_manager.push_depth_map_image()
+			
 		
 	#go to next arm state, if one is available
 	#only do arm servos though
@@ -252,7 +257,10 @@ class ContentionManager:
 		
 	def map_hook(self):
 		#make 2d and 3d map images at a slow rate (5 seconds?), pass to camera_sever
-		pass
+		#if been a while...
+		if(self.map_manager.is_field_map_stale()):
+			self.map_manager.get_field_map_image()
+			self.map_manager.push_field_map_image()
 	
 	@staticmethod
 	def build_test():
