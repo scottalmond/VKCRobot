@@ -114,6 +114,5 @@ copy all log files from robot to controller:
 ssh pi@192.168.1.113
 cd Documents/log/
 scp * 192.168.1.112:/home/pi/Documents/VKCRobot/analysis/
-=======
->>>>>>> a2133aa99f4ce3b819b0180798e85944471c625d
->>>>>>> 8b9ca32c344a2d1f0cd8f60c59b66759c7ae0e5f
+
+
