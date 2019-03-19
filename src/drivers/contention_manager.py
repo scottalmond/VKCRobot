@@ -25,8 +25,8 @@ class ContentionManager:
 	ARM_PWM_CHANNELS=[0,1,2,3,4,5] #user-controlled channels
 	ARM_DELAY_BETWEEN_SWEEP_STATES_SECONDS=0.5 #wait X seconds between each sweep command to allow arm to physcially move to commanded position
 	LIDAR_PWM_CHANNELS={"pan":6,"tilt":7} #pan, tilt
-	PWM_LIMITS={"minimum":[100,200,140,  0,  0,  0,  0,  0],#angular range of servos before hitting something
-				"maximum":[-20,100,  0,180,180,180,180,180]}
+	PWM_LIMITS={"minimum":[140,240,  0,-20,  0,  0,  0,  0],#angular range of servos before hitting something
+				"maximum":[-20, 60,180,200,180,180,180,180]}
 	WHEEL_CIRCUMFERNECE_INCH=15
 	
 	def __init__(self,camera_server):
@@ -85,7 +85,7 @@ class ContentionManager:
 		return {"wheels":{"state":self.wheel_state,
 						  "homing_state":self.wheel_homing_state},
 				"pwm":{"is_looping":self.pwm_queue_state["is_looping"],
-					   "loop_state_count":len(self.pwm_queue_state),
+					   "loop_state_count":len(self.pwm_queue),
 					   "state":self.pwm_state_ratio#ui_commanded state echo back to controller
 					   },
 				"lidar":{"is_lidar_static":self.is_lidar_static,

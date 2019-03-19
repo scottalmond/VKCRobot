@@ -439,6 +439,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 						with streamVideo.condition:
 							streamVideo.condition.wait()
 							image = streamVideo.read()
+
+						image=cv2.rotate(image,rotateCode=cv2.ROTATE_90_CLOCKWISE)
 							
 						if(streamVideo.invert_colors):
 							image=cv2.bitwise_not(image)
@@ -651,7 +653,7 @@ class CameraManager(Thread):
 		frames_per_second=10
 		global streamVideo
 		upscale=2
-		streamVideo = VideoStream((int(400*upscale),int(480*upscale)),(400,480),frames_per_second).start()
+		streamVideo = VideoStream((int(480*upscale),int(400*upscale)),(480,400),frames_per_second).start()
 		
 		self.view_manager=streamVideo.view_manager
 		

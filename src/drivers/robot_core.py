@@ -53,7 +53,8 @@ while(True):
 	command_list=[]
 	
 	try:
-		print("RobotCore iteration: ",iteration_counter)
+		if(iteration_counter%100==0):
+			print("RobotCore iteration: ",iteration_counter)
 		iteration_counter+=1
 		
 		
