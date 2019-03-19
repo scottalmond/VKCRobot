@@ -36,10 +36,11 @@ SDA (blue) to: BCM 2, wPi 8, Phys 3
 
 class Lidar:
 
-	SAMPLING_FREQUENCY_HZ=10
+	SAMPLING_FREQUENCY_HZ=270
 	I2C_ADDRESS=0x62
 	I2C_REGISTER_ACQ_COMMAND=0x00
 	I2C_REGISTER_STATUS=0x01
+	I2C_REGISTER_ACQ_CONFIG_REG=0x04
 	I2C_REGISTER_FULL_DELAY_HIGH=0x0F
 	I2C_REGISTER_FULL_DELAY_LOW=0x10
 	I2C_REGISTER_TRIGGER_COUNT=0x11
@@ -55,6 +56,9 @@ class Lidar:
 	def initInterface(self,sampling_freqeuncy_hz):
 		wpi=self.wpi
 		file_descriptor=wpi.wiringPiI2CSetup(self.I2C_ADDRESS)
+		#configure device to use remote register for sampling rate control
+		reg_value=0x08 | (1<<5) #0x08 default value
+		wpi.wiringPiI2CWriteReg8(file_descriptor,self.I2C_REGISTER_ACQ_CONFIG_REG, reg_value)
 		#configure device to capture continuously
 		wpi.wiringPiI2CWriteReg8(file_descriptor,self.I2C_REGISTER_TRIGGER_COUNT, 0xFF)
 		#configure triggering rate

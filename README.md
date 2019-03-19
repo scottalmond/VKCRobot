@@ -99,6 +99,11 @@ sudo apt-get install arduino
 
 --
 
+camera:
+sudo pip3 install scipy
+sudo pip3 install imutils
+sudo pip3 install numpy --upgrade
+=======
 split screen mjpg
 omxplayer --win 0,0,400,480 -r --live 'http://192.168.1.113:8000/stream.mjpg'
 omxplayer --win 0,0,400,480 --no-keys --no-osd --live 'http://192.168.1.113:8000/stream.mjpg'
@@ -109,3 +114,6 @@ copy all log files from robot to controller:
 ssh pi@192.168.1.113
 cd Documents/log/
 scp * 192.168.1.112:/home/pi/Documents/VKCRobot/analysis/
+=======
+>>>>>>> a2133aa99f4ce3b819b0180798e85944471c625d
+>>>>>>> 8b9ca32c344a2d1f0cd8f60c59b66759c7ae0e5f
