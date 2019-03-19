@@ -63,7 +63,7 @@ class GUI:
 		
 	def __createButtons(self):
 		self.button_listS={ #Static buttons
-			"CLOSE":		 Touchable("RECTANGLE", 740,  20, 50, 50,(255,0,0),"X",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"CLOSE":		 Touchable("RECTANGLE", 590,  20, 20, 20,(255,0,0),"X",(255,255,255),self.pygame,self.screen_2d,self.font),
 			#"LINK_STATUS":   Touchable("RECTANGLE",140,  0,100, 40,(0,0,0),"0",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"NEXT":         Touchable("RECTANGLE", 700,20,100,50,(255,0,0),"Next -->",(255,255,255),self.pygame,self.screen_2d,self.font),			
 			"PREV":         Touchable("RECTANGLE", 400,20, 100,50,(255,0,0),"<-- Prev",(255,255,255),self.pygame,self.screen_2d,self.font),
@@ -77,7 +77,7 @@ class GUI:
 			#"CAM_CONTROLLER":Touchable("RECTANGLE", 40,340,100,100,(255,0,0),"PIC C",(255,255,255),self.pygame,self.screen_2d,self.font),
 			#"CAM_ROBOT":     Touchable("RECTANGLE",140,340,100,100,(255,0,0),"PIC R",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"WHEEL":         Touchable("CIRCLE",   450,90,300,300,(255,0,0),"Motor Controller",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"HOME":			  Touchable("RECTANGLE",420,300,50,50,(0,255,0),"Home",(255,255,255),self.pygame,self.screen_2d,self.font)
+			#"HOME":			  Touchable("RECTANGLE",420,300,50,50,(0,255,0),"Home",(255,255,255),self.pygame,self.screen_2d,self.font)
 
 			}
 			
@@ -96,8 +96,8 @@ class GUI:
 			"LED2":         Touchable("RECTANGLE",400,155,50,50,(255,0,0),"LED2",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"LED3":         Touchable("RECTANGLE",400,230,50,50,(255,0,0),"LED3",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"LED4":         Touchable("RECTANGLE",400,305,50,50,(255,0,0),"LED4",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"DEPTH":        Touchable("DEPTH",    400,360,50,50,(255,0,0),"MAP",(255,255,255),self.pygame,self.screen_2d,self.font),
-			"HOLD":         Touchable("HOLD",     400,430,50,50,(255,0,0),"HOLD",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"DEPTH":        Touchable("RECTANGLE",400,360,50,50,(255,0,0),"MAP",(255,255,255),self.pygame,self.screen_2d,self.font),
+			"HOLD":         Touchable("RECTANGLE",400,430,50,50,(255,0,0),"HOLD",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"QRtext":       Touchable("RECTANGLE",470,170,400,300,(255,0,0),"QR text",(255,255,255),self.pygame,self.screen_2d,self.font),		
 			"EXPOSURE":     Touchable("RECTANGLE",470,90,210,70,(255,0,0),"Exposure",(255,255,255),self.pygame,self.screen_2d,self.font),		
 			"AUTO":         Touchable("RECTANGLE",690,90,50,70,(255,0,0),"Auto",(255,255,255),self.pygame,self.screen_2d,self.font),		
@@ -110,6 +110,10 @@ class GUI:
 			"PWM2":         Touchable("RECTANGLE",   480,140,300,300,(0,255,0),"Arm Controller2",(255,255,255),self.pygame,self.screen_2d,self.font),
 			"PWM3":         Touchable("RECTANGLE",   480,140,300,300,(255,0,0),"Arm Controller3",(255,255,255),self.pygame,self.screen_2d,self.font),
 			}
+		for pwm_index in [1,2,3]:
+			pwm_string="PWM"+str(pwm_index)
+			handle=self.pwm_list[pwm_string]
+			self.pwm_list[pwm_string].mark=self.pwm_list[pwm_string].range_to_px([0.5,0.5],[0,1],[0,1])
 		
 	def __createEvents(self):
 		self.touchscreen=ft5406.Touchscreen()
@@ -245,7 +249,7 @@ class GUI:
 						
 			for button_name,button_object in self.pwm_list.items():
 				if(button_object.is_in_bounds(touch.position[0],touch.position[1])):
-					scaled_coords=button_object.scale_to_bounds(touch.position,[0.0,1.0],[-1.0,1.0])
+					scaled_coords=button_object.scale_to_bounds(touch.position,[0.0,1.0],[0.0,1.0])
 					if(button_name == "PWM1" and self.pwm == 1):
 						print("Send packets for PWM 0 & 1")
 						self.send_pwm01(scaled_coords[0],scaled_coords[1])
@@ -453,6 +457,14 @@ class GUI:
 			self.pwm_state=status["pwm"]
 			self.button_list2["LOOP"].is_enabled=status["pwm"]["is_looping"]
 			self.button_list2["SAVE"].label="SV "+str(status["pwm"]["loop_state_count"])
+			#begin paragraph of janky one-off code to draw dot of current pwm location on GUI
+			for pwm_index in range(3):
+				pwm_name="PWM"+str(pwm_index+1)#1-3
+				ratio_list=[status["pwm"]["state"][pwm_index*2],status["pwm"]["state"][pwm_index*2+1]]
+				px=self.pwm_list[pwm_name].range_to_px(ratio_list,[0.0,1.0],[0.0,1.0])
+				for channel_offset in [0,1]:#0-1
+					channel_index=pwm_index*2+channel_offset#0-5
+					self.pwm_list[pwm_name].mark[channel_offset]=px[channel_offset]
 			
 			#global status
 			self.link_counter=status["counter"]
